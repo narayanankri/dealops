@@ -1,0 +1,207 @@
+@import 'tailwindcss';
+
+/* ───────────────────────────────────────────────────────────
+   AI Deal Operations — design system (PRD §11)
+   Dark, premium, data-rich. One accent; color reserved for meaning.
+   ─────────────────────────────────────────────────────────── */
+@theme {
+  /* surfaces — near-black canvas with layered elevations */
+  --color-canvas: #0a0b0e;
+  --color-panel: #13161d;
+  --color-panel-2: #191d26;
+  --color-panel-3: #20252f;
+  --color-line: #252b36;
+  --color-line-soft: #1c212a;
+
+  /* ink */
+  --color-ink: #e9ebef;
+  --color-ink-2: #a3aab7;
+  --color-ink-3: #6c7480;
+
+  /* signature accent — electric cyan. Interactive/primary + the instrument gauge only. */
+  --color-accent: #19c2db;
+  --color-accent-2: #5fdcf0;
+  --color-accent-bg: #0e2c34;
+
+  /* semantic — verdict & risk ONLY, never decoration */
+  --color-pos: #35c98a;
+  --color-pos-bg: #122c22;
+  --color-warn: #efb24a;
+  --color-warn-bg: #2e2613;
+  --color-neg: #f0647c;
+  --color-neg-bg: #2e1620;
+
+  /* The Instrument type system: technical grotesk display · mono numerals · clean sans body */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-canvas);
+  /* The Instrument motif: a faint hairline measurement grid + a single cyan glow at the
+     top edge. Reads as a calibrated surface, not a flat fill. Fixed, very subtle. */
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.016) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.016) 1px, transparent 1px),
+    radial-gradient(950px 480px at 50% -8%, rgba(25, 194, 219, 0.06), transparent 64%);
+  background-size: 46px 46px, 46px 46px, 100% 100%;
+  background-attachment: fixed;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings carry the technical-grotesk identity. */
+h1, h2, h3 {
+  font-family: var(--font-display);
+}
+h1, h2 {
+  letter-spacing: -0.02em;
+}
+
+/* Considered motion — content settles in, never bounces. */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  animation: fade-up 0.26s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fade-up { animation: none; }
+}
+
+/* Honest "scan" motif — runs ONLY while the engine is actually recomputing (Re-run).
+   A single accent sweep passes down the card, then stops. No idle decoration. */
+.scanning { position: relative; overflow: hidden; }
+.scanning::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(122, 162, 255, 0.14) 50%, transparent 100%);
+  height: 45%;
+  animation: scan-sweep 0.9s ease-in-out;
+  pointer-events: none;
+}
+@keyframes scan-sweep {
+  from { transform: translateY(-110%); }
+  to { transform: translateY(330%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scanning::after { animation: none; opacity: 0; }
+}
+
+/* numbers that matter — the instrument's readout: mono, tabular, slightly tightened. */
+.tnum {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* thin custom scrollbar — keeps the dense surfaces calm */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a313d transparent;
+}
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #2a313d;
+  border-radius: 99px;
+  border: 2px solid var(--color-canvas);
+}
+
+::selection {
+  background: var(--color-accent-bg);
+}
+
+/* ───────────────────────────────────────────────────────────
+   Print — the IC memo as a clean, light, paginated document.
+   The app is dark on screen; for print we RE-MAP the design tokens
+   to a light palette. Every Tailwind colour utility resolves through
+   these custom properties, so overriding them here recolours the whole
+   memo to ink-on-white in one place. We then hide the app chrome and
+   let the memo flow naturally across pages.
+   ─────────────────────────────────────────────────────────── */
+@media print {
+  :root {
+    --color-canvas: #ffffff;
+    --color-panel: #ffffff;
+    --color-panel-2: #f4f6f8;
+    --color-panel-3: #eaedf1;
+    --color-line: #cfd4db;
+    --color-line-soft: #e2e6ea;
+    --color-ink: #11151b;
+    --color-ink-2: #343b46;
+    --color-ink-3: #6a7280;
+    /* accent darkened for ink-on-paper contrast */
+    --color-accent: #0a7382;
+    --color-accent-2: #0a6675;
+    --color-accent-bg: #e6f4f6;
+    --color-pos: #1b8557;
+    --color-pos-bg: #e8f5ee;
+    --color-warn: #946a13;
+    --color-warn-bg: #f7f0dd;
+    --color-neg: #b83350;
+    --color-neg-bg: #fbe7eb;
+  }
+
+  html,
+  body,
+  #root {
+    height: auto !important;
+    background: #ffffff !important;
+  }
+  body {
+    background-image: none !important;
+    color: #11151b;
+    /* honour the recoloured backgrounds when printing */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* collapse the app shell so the memo becomes the page document */
+  aside {
+    display: none !important;
+  }
+  main {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* the memo card fills the page; no card chrome on paper */
+  .memo-doc {
+    background: #ffffff !important;
+  }
+
+  /* pagination hygiene — never split a section or a table row across pages */
+  .memo-doc section,
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+  .memo-doc h2,
+  .memo-doc h3 {
+    break-after: avoid;
+  }
+  .memo-doc table {
+    break-inside: auto;
+  }
+  .memo-doc tr {
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 15mm 14mm 17mm;
+  }
+}
