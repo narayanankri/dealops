@@ -5,13 +5,13 @@
    Dark, premium, data-rich. One accent; color reserved for meaning.
    ─────────────────────────────────────────────────────────── */
 @theme {
-  /* surfaces — near-black canvas with layered elevations */
-  --color-canvas: #0a0b0e;
-  --color-panel: #13161d;
-  --color-panel-2: #191d26;
-  --color-panel-3: #20252f;
-  --color-line: #252b36;
-  --color-line-soft: #1c212a;
+  /* surfaces — near-black canvas with layered elevations, faint blue-black undertone */
+  --color-canvas: #090a11;
+  --color-panel: #12151f;
+  --color-panel-2: #181c29;
+  --color-panel-3: #1f2433;
+  --color-line: #242a3a;
+  --color-line-soft: #1b202d;
 
   /* ink */
   --color-ink: #e9ebef;
@@ -22,6 +22,11 @@
   --color-accent: #19c2db;
   --color-accent-2: #5fdcf0;
   --color-accent-bg: #0e2c34;
+
+  /* secondary "space" accent — indigo. Atmosphere + AI cues only, never verdict/decoration. */
+  --color-indigo: #7c7cf0;
+  --color-indigo-2: #a3a0ff;
+  --color-indigo-bg: #181a3a;
 
   /* semantic — verdict & risk ONLY, never decoration */
   --color-pos: #35c98a;
@@ -46,13 +51,16 @@ body,
 body {
   margin: 0;
   background-color: var(--color-canvas);
-  /* The Instrument motif: a faint hairline measurement grid + a single cyan glow at the
-     top edge. Reads as a calibrated surface, not a flat fill. Fixed, very subtle. */
+  /* The Instrument motif: a faint hairline measurement grid + layered "deep-space" glows —
+     a cyan calibration light at the top edge, with indigo atmosphere top-right and bottom-left.
+     Reads as a calibrated surface in space, not a flat fill. Fixed, very subtle. */
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.016) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.016) 1px, transparent 1px),
-    radial-gradient(950px 480px at 50% -8%, rgba(25, 194, 219, 0.06), transparent 64%);
-  background-size: 46px 46px, 46px 46px, 100% 100%;
+    radial-gradient(900px 460px at 50% -8%, rgba(25, 194, 219, 0.06), transparent 62%),
+    radial-gradient(820px 520px at 88% 0%, rgba(99, 102, 241, 0.07), transparent 60%),
+    radial-gradient(1100px 760px at 6% 108%, rgba(79, 70, 229, 0.06), transparent 60%);
+  background-size: 46px 46px, 46px 46px, 100% 100%, 100% 100%, 100% 100%;
   background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);

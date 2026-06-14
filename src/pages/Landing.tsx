@@ -507,25 +507,8 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
 
         {/* hero */}
         <main className="lp-rise">
-          <div className="relative min-h-[78vh] py-16 lg:py-20">
-            {/* instrument core — the calibrating gauge at the heart of the universe */}
-            <div className="pointer-events-none absolute inset-0 z-0 hidden place-items-center lg:grid">
-              <div className="opacity-[0.85]">
-                <CalibratingGauge score={88} size={470} ticks={62} />
-              </div>
-            </div>
-
-            {/* live tallies floating in the field */}
-            <MetricChip label="Capital analysed" className="bottom-[4%] left-0" delay={0.3}>
-              <CountUp to={2.4} decimals={1} prefix="$" suffix="tn" />
-            </MetricChip>
-            <MetricChip label="Median base IRR" className="bottom-[2%] left-1/2 hidden -translate-x-1/2 sm:block" delay={0.9}>
-              <CountUp to={24.1} decimals={1} suffix="%" />
-            </MetricChip>
-            <MetricChip label="Blocking checks" className="right-0 bottom-[4%]" delay={0.6}>
-              <CountUp to={0} suffix=" / 312" />
-            </MetricChip>
-
+          <div className="relative py-12 lg:py-16">
+            {/* foreground: headline + login */}
             <div className="relative z-10 grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
               <div className="space-y-6">
                 <Eyebrow />
@@ -543,6 +526,22 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
               <div className="flex justify-center lg:justify-end">
                 <LoginCard onEnter={onEnter} className="border-line/80 bg-panel/55 backdrop-blur-xl" />
               </div>
+            </div>
+
+            {/* instrument core — sits BELOW the foreground text, live tallies flanking it */}
+            <div className="relative z-10 mt-10 hidden h-[300px] items-center justify-center lg:flex">
+              <div className="pointer-events-none opacity-90">
+                <CalibratingGauge score={88} size={340} ticks={56} />
+              </div>
+              <MetricChip label="Capital analysed" className="top-1/2 left-[3%] -translate-y-1/2" delay={0.3}>
+                <CountUp to={2.4} decimals={1} prefix="$" suffix="tn" />
+              </MetricChip>
+              <MetricChip label="Median base IRR" className="bottom-0 left-1/2 -translate-x-1/2" delay={0.9}>
+                <CountUp to={24.1} decimals={1} suffix="%" />
+              </MetricChip>
+              <MetricChip label="Blocking checks" className="top-1/2 right-[3%] -translate-y-1/2" delay={0.6}>
+                <CountUp to={0} suffix=" / 312" />
+              </MetricChip>
             </div>
           </div>
         </main>
