@@ -27,7 +27,7 @@
   .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:18px}
 
   /* hero */
-  .hero{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:14px;margin-top:22px}
+  .hero{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-top:22px}
   .hcell{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
   .hcell.lead{background:linear-gradient(150deg,rgba(25,194,219,.10),rgba(99,102,241,.06));border-color:rgba(25,194,219,.32)}
   .hcell .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
@@ -134,7 +134,6 @@
   <div class="hero">
     <div class="hcell lead"><div class="lbl">Total — 100 deals</div><div class="val" id="hTotal">—</div><div class="note" id="hTotalNote">at current cache rate</div></div>
     <div class="hcell"><div class="lbl">Average per deal</div><div class="val" id="hAvg">—</div><div class="note">blended across the mix</div></div>
-    <div class="hcell warnote"><div class="lbl">Worst case · 0% cache</div><div class="val" id="hWorst">—</div><div class="note">cold start, no caching</div></div>
   </div>
   <div class="takeaway" id="takeaway">—</div>
 
@@ -337,11 +336,11 @@ function recompute(){
   document.getElementById("segH").textContent = c.H>7?c.H:"";
 
   // tier cards + totals
-  let total=0, worst=0, partLoop=0, partRev=0, partCrit=0, nDeals=0;
+  let total=0, partLoop=0, partRev=0, partCrit=0, nDeals=0;
   const cardHtml = LEVELS.map(L=>{
     const n = c[L.key];
-    const pd = perDeal(L,h), pdWorst = perDeal(L,0);
-    total += pd.total*n; worst += pdWorst.total*n;
+    const pd = perDeal(L,h);
+    total += pd.total*n;
     partLoop += pd.loop*n; partRev += pd.revise*n; partCrit += pd.crit*n; nDeals += n;
     return `<div class="tier ${L.cls}">
       <div class="tname"><span>${L.name}</span><span class="tcount">${n} deal${n===1?"":"s"} · ${L.tag}</span></div>
@@ -358,10 +357,9 @@ function recompute(){
   document.getElementById("hTotal").textContent = usdAuto(total);
   document.getElementById("hTotalNote").textContent = `at ${Math.round(h*100)}% cache · ${M(authorId).name} author / ${M(directorId).name} Director`;
   document.getElementById("hAvg").textContent = usd(avg,2);
-  document.getElementById("hWorst").textContent = usdAuto(worst);
 
   document.getElementById("takeaway").innerHTML =
-    `<b>${c.L}</b> light · <b>${c.S}</b> standard · <b>${c.H}</b> hard &nbsp;→&nbsp; <b>${usdAuto(total)}</b> to screen all 100 deals at ${Math.round(h*100)}% cache, about <b>${usd(avg,2)}</b> per deal. Cold-start worst case: <b>${usdAuto(worst)}</b>.`;
+    `<b>${c.L}</b> light · <b>${c.S}</b> standard · <b>${c.H}</b> hard &nbsp;→&nbsp; <b>${usdAuto(total)}</b> to screen all 100 deals at ${Math.round(h*100)}% cache, about <b>${usd(avg,2)}</b> per deal.`;
 
   document.getElementById("note").innerHTML =
     `Across 100 deals at ${Math.round(h*100)}% cache: research &amp; authoring ${usdAuto(partLoop)} + revisions ${usdAuto(partRev)} + Director critiques ${usdAuto(partCrit)} = <b style="color:var(--cyan2)">${usdAuto(total)}</b>. ` +
