@@ -9,6 +9,7 @@ import type { Analysis, Deal, DealStatus } from '@/types'
 
 type SortKey = 'name' | 'ticket' | 'mandate' | 'merit' | 'composite' | 'status'
 type FacetKey = 'sector' | 'geo' | 'stage'
+type FlagKey = 'lowTrust' | 'meritVsFit' | 'valuation' | 'newsRisk' | 'sharia'
 
 const statusCardTone: Record<string, string> = {
   pos: 'text-pos',
@@ -18,12 +19,34 @@ const statusCardTone: Record<string, string> = {
   accent: 'text-accent-2',
 }
 
+// ── Screening flags — conceptual lenses derived from engine output, not metadata. ──
+// Each is a yes/no read over (deal, analysis); selecting several shows the UNION (deals
+// flagged for ANY selected lens), so a reviewer can surface everything worth a second look.
+const RISK_RE =
+  /\b(losses?|deficit|shortfall|writedown|impair\w*|probe|investigat\w*|lawsuit|sued|fines?|penalt\w+|regulat\w+|ceiling|breach\w*|layoffs?|fraud\w*|defaults?|downgrad\w+|delays?|recall\w*|resign\w*|short[- ]seller|disputes?|banned|halt\w*|scrutiny|warning|diluti\w+)\b/i
+const RECENT_NEWS_YEAR = new Date().getFullYear() - 1 // "recent" = last year or this year
+function hasRecentNewsRisk(d: Deal): boolean {
+  return d.news.some((n) => {
+    const m = /20\d\d/.exec(n.date)
+    return (m ? +m[0] : 0) >= RECENT_NEWS_YEAR && RISK_RE.test(n.headline)
+  })
+}
+
+const FLAGS: { key: FlagKey; label: string; hint: string; test: (d: Deal, a: Analysis) => boolean }[] = [
+  { key: 'lowTrust', label: 'Low data trust', hint: 'Data-trust score below 60 — inputs lean on inferred / estimated figures', test: (_d, a) => a.dataTrustScore < 60 },
+  { key: 'meritVsFit', label: 'High merit · low fit', hint: 'A strong business that sits outside the mandate — merit ≥ 70 but mandate fit < 75', test: (_d, a) => a.meritScore >= 70 && a.mandateFit.score < 75 },
+  { key: 'valuation', label: 'Valuation concern', hint: 'Ask is more than 75% above the reconciled DCF + comps value', test: (_d, a) => a.assetValue.askVsValuePct > 75 },
+  { key: 'newsRisk', label: 'Recent news risk', hint: `A ${RECENT_NEWS_YEAR}+ headline mentions a potential risk — worth a read`, test: (d) => hasRecentNewsRisk(d) },
+  { key: 'sharia', label: 'Shariah concern', hint: 'Shariah screen is non-compliant or mixed', test: (d) => d.shariaScreen?.status === 'non-compliant' || d.shariaScreen?.status === 'mixed' },
+]
+
 export function Pipeline() {
   const { deals, analysisFor, activeFundId, activeFund, setStatus } = useApp()
   const navigate = useNavigate()
 
   const [statuses, setStatuses] = useState<Set<DealStatus>>(new Set())
   const [facets, setFacets] = useState<Record<FacetKey, Set<string>>>({ sector: new Set(), geo: new Set(), stage: new Set() })
+  const [flags, setFlags] = useState<Set<FlagKey>>(new Set())
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'composite', dir: 'desc' })
 
@@ -36,8 +59,8 @@ export function Pipeline() {
     return [d.name, d.sector, d.geography, d.stage, d.oneLiner].some((f) => f.toLowerCase().includes(q))
   }
 
-  // passes all filters except (optionally) one facet — used for faceted live counts
-  const passesExcept = (d: Deal, except?: FacetKey | 'status') => {
+  // passes all filters except (optionally) one group — used for faceted live counts
+  const passesExcept = (d: Deal, except?: FacetKey | 'status' | 'flags') => {
     if (except !== 'status') {
       if (statuses.size === 0) {
         if (d.status === 'archived') return false
@@ -46,7 +69,12 @@ export function Pipeline() {
     if (except !== 'sector' && facets.sector.size && !facets.sector.has(d.sector)) return false
     if (except !== 'geo' && facets.geo.size && !facets.geo.has(d.geography)) return false
     if (except !== 'stage' && facets.stage.size && !facets.stage.has(d.stage)) return false
-    return matchSearch(d)
+    if (!matchSearch(d)) return false
+    if (except !== 'flags' && flags.size) {
+      const a = analysis.get(d.id)
+      if (!a || !FLAGS.some((f) => flags.has(f.key) && f.test(d, a))) return false
+    }
+    return true
   }
 
   const shown = useMemo(() => {
@@ -68,7 +96,7 @@ export function Pipeline() {
       return sort.dir === 'asc' ? c : -c
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fundDeals, statuses, facets, search, sort, analysis])
+  }, [fundDeals, statuses, facets, flags, search, sort, analysis])
 
   // facet option lists with faceted counts
   const facetGroup = (key: FacetKey, field: (d: Deal) => string) => {
@@ -79,6 +107,16 @@ export function Pipeline() {
   const sectorOpts = facetGroup('sector', (d) => d.sector)
   const geoOpts = facetGroup('geo', (d) => d.geography)
   const stageOpts = facetGroup('stage', (d) => d.stage)
+
+  // flag chips with faceted counts (count ignores the flags group itself)
+  const flagOpts = FLAGS.map((f) => {
+    const n = fundDeals.filter((d) => {
+      if (!passesExcept(d, 'flags')) return false
+      const a = analysis.get(d.id)
+      return !!a && f.test(d, a)
+    }).length
+    return { ...f, n }
+  })
 
   const statusCount = (s: DealStatus) => fundDeals.filter((d) => passesExcept(d, 'status') && d.status === s).length
   const capital = shown.filter((d) => isActive(d.status)).reduce((s, d) => s + d.ticketUSDm, 0)
@@ -95,10 +133,17 @@ export function Pipeline() {
       n.has(v) ? n.delete(v) : n.add(v)
       return { ...prev, [key]: n }
     })
-  const anyFilter = statuses.size || facets.sector.size || facets.geo.size || facets.stage.size || search.trim()
+  const toggleFlag = (k: FlagKey) =>
+    setFlags((prev) => {
+      const n = new Set(prev)
+      n.has(k) ? n.delete(k) : n.add(k)
+      return n
+    })
+  const anyFilter = statuses.size || facets.sector.size || facets.geo.size || facets.stage.size || flags.size || search.trim()
   const clearAll = () => {
     setStatuses(new Set())
     setFacets({ sector: new Set(), geo: new Set(), stage: new Set() })
+    setFlags(new Set())
     setSearch('')
   }
 
@@ -158,6 +203,9 @@ export function Pipeline() {
           <FacetRow label="Sector" opts={sectorOpts} active={facets.sector} onToggle={(v) => toggleFacet('sector', v)} />
           <FacetRow label="Geography" opts={geoOpts} active={facets.geo} onToggle={(v) => toggleFacet('geo', v)} />
           <FacetRow label="Stage" opts={stageOpts} active={facets.stage} onToggle={(v) => toggleFacet('stage', v)} />
+        </div>
+        <div className="mt-3 border-t border-line/60 pt-3">
+          <FlagRow opts={flagOpts} active={flags} onToggle={toggleFlag} />
         </div>
       </Card>
 
@@ -221,6 +269,49 @@ function FacetRow({ label, opts, active, onToggle }: { label: string; opts: [str
             >
               {v}
               <span className={cn('tnum', on ? 'text-accent-2/70' : 'text-ink-3')}>{n}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function FlagRow({
+  opts,
+  active,
+  onToggle,
+}: {
+  opts: { key: FlagKey; label: string; hint: string; n: number }[]
+  active: Set<FlagKey>
+  onToggle: (k: FlagKey) => void
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="w-20 shrink-0 pt-1 text-xs text-ink-3" title="Conceptual lenses from the analysis. Selecting several shows deals flagged for any of them.">
+        Flags
+      </span>
+      <div className="flex flex-wrap gap-1.5">
+        {opts.map((f) => {
+          const on = active.has(f.key)
+          const empty = f.n === 0 && !on
+          return (
+            <button
+              key={f.key}
+              onClick={() => onToggle(f.key)}
+              title={f.hint}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition-colors',
+                on
+                  ? 'border-warn/60 bg-warn/10 text-warn'
+                  : empty
+                    ? 'border-line/60 bg-panel-2 text-ink-3/60'
+                    : 'border-line bg-panel-2 text-ink-2 hover:border-warn/50 hover:text-ink',
+              )}
+            >
+              <span className={cn('h-1.5 w-1.5 rounded-full', on ? 'bg-warn' : empty ? 'bg-ink-3/40' : 'bg-warn/60')} />
+              {f.label}
+              <span className={cn('tnum', on ? 'text-warn/80' : 'text-ink-3')}>{f.n}</span>
             </button>
           )
         })}
