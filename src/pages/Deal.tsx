@@ -158,7 +158,7 @@ function DealHeader({ deal, a }: { deal: Deal; a: Analysis }) {
 
 function Metric({ label, score }: { label: string; score: number }) {
   return (
-    <div>
+    <div className="flex flex-col items-center text-center">
       <div className="text-[11px] font-medium tracking-wide text-ink-3 uppercase">{label}</div>
       <div className="mt-2">
         <ConfidenceRing score={score} size={52} />
