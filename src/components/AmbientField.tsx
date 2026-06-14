@@ -26,17 +26,18 @@ export function AmbientField() {
     window.addEventListener('resize', resize)
 
     const rng = (a: number, b: number) => a + Math.random() * (b - a)
-    const N = 40
-    const nodes = Array.from({ length: N }, () => ({
+    const N = 58
+    const nodes = Array.from({ length: N }, (_, i) => ({
       x: Math.random(),
       y: Math.random(),
       z: rng(0.3, 1),
-      vx: rng(-1, 1) * 0.00005,
-      vy: rng(-1, 1) * 0.00005,
-      r: rng(0.6, 2),
-      hue: Math.random() < 0.33 ? 'violet' : 'cyan',
+      vx: rng(-1, 1) * 0.00006,
+      vy: rng(-1, 1) * 0.00006,
+      r: i < 14 ? rng(1.8, 3.2) : rng(0.7, 2),
+      hue: i % 3 === 2 ? 'violet' : 'cyan',
+      hub: i < 14,
     }))
-    const stars = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 0.8 + 0.2, a: Math.random() * 0.4 + 0.05 }))
+    const stars = Array.from({ length: 90 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 0.9 + 0.2, a: Math.random() * 0.5 + 0.1 }))
     const TH = 0.2
     let raf = 0
     let rot = 0
@@ -75,8 +76,8 @@ export function AmbientField() {
           const dy = (pts[i].sy - pts[j].sy) / h
           const d = Math.hypot(dx, dy)
           if (d < TH) {
-            ctx.strokeStyle = `rgba(90,170,210,${(1 - d / TH) * 0.07 * Math.min(pts[i].n.z, pts[j].n.z)})`
-            ctx.lineWidth = 0.5
+            ctx.strokeStyle = `rgba(95,180,215,${(1 - d / TH) * 0.16 * Math.min(pts[i].n.z, pts[j].n.z)})`
+            ctx.lineWidth = 0.6
             ctx.beginPath()
             ctx.moveTo(pts[i].sx, pts[i].sy)
             ctx.lineTo(pts[j].sx, pts[j].sy)
@@ -85,7 +86,17 @@ export function AmbientField() {
         }
       }
       for (const { sx, sy, n } of pts) {
-        ctx.fillStyle = n.hue === 'violet' ? `rgba(150,130,235,${0.16 * n.z})` : `rgba(120,200,225,${0.16 * n.z})`
+        const rgb = n.hue === 'violet' ? '152,132,238' : '120,205,232'
+        if (n.hub) {
+          const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, n.r * 8)
+          g.addColorStop(0, `rgba(${rgb},${0.22 * n.z})`)
+          g.addColorStop(1, `rgba(${rgb},0)`)
+          ctx.fillStyle = g
+          ctx.beginPath()
+          ctx.arc(sx, sy, n.r * 8, 0, 7)
+          ctx.fill()
+        }
+        ctx.fillStyle = `rgba(${rgb},${(n.hub ? 0.55 : 0.34) * n.z})`
         ctx.beginPath()
         ctx.arc(sx, sy, n.r, 0, 7)
         ctx.fill()
@@ -98,5 +109,5 @@ export function AmbientField() {
       window.removeEventListener('resize', resize)
     }
   }, [])
-  return <canvas ref={ref} className="pointer-events-none fixed inset-0 -z-0 h-full w-full opacity-70" aria-hidden />
+  return <canvas ref={ref} className="pointer-events-none fixed inset-0 z-0 h-full w-full" aria-hidden />
 }
