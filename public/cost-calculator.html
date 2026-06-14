@@ -181,8 +181,8 @@
   <div class="card">
     <div class="sechead"><h2>Prompt-cache hit rate <span class="tag">the cost lever</span></h2><span class="hint">The frozen spec + schema are cached and re-used across the whole batch.</span></div>
     <div class="cacherow">
-      <input type="range" id="hit" min="0" max="95" value="80" oninput="recompute()" style="max-width:420px">
-      <span class="pill" id="hitVal">80%</span>
+      <input type="range" id="hit" min="0" max="95" value="95" oninput="recompute()" style="max-width:420px">
+      <span class="pill" id="hitVal">95%</span>
       <span class="muted" style="font-size:12px">0% = cold / worst case &nbsp;·&nbsp; 80–90% = a warm batch run (1h-TTL system block)</span>
     </div>
   </div>
@@ -229,7 +229,7 @@ const MODELS = [
   {id:"o4-mini",    name:"o4-mini",          prov:"o", in:1.10, out:4.40,cr:0.275, ctx:"200K"},
 ];
 const M = id => MODELS.find(m => m.id === id) || MODELS[0];
-let authorId = "opus-4-8", directorId = "sonnet-4-6";
+let authorId = "opus-4-8", directorId = "opus-4-8";
 
 // ── tiers ───────────────────────────────────────────────
 // T research turns · D fresh tok/turn · O output/turn · draft = memo size · crit = punch-list size
