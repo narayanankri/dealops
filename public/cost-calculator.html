@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Deal Operations — Pipeline Cost Calculator</title>
+<style>
+  :root{
+    --bg:#090a11; --panel:#12151f; --panel2:#181c29; --line:#242a3a;
+    --ink:#e9ebef; --ink2:#a3aab7; --ink3:#6c7480;
+    --cyan:#19c2db; --cyan2:#5fdcf0; --indigo:#7c7cf0; --pos:#35c98a; --neg:#f0647c; --warn:#efb24a;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace;
+    --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    background-image:radial-gradient(900px 460px at 50% -10%,rgba(25,194,219,.06),transparent 60%),
+      radial-gradient(820px 520px at 88% 0%,rgba(99,102,241,.07),transparent 60%);
+    background-attachment:fixed;}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 24px 64px}
+  h1{font-size:24px;font-weight:600;letter-spacing:-.02em;margin:0}
+  .sub{color:var(--ink3);font-size:13px;margin-top:4px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--cyan2)}
+  h2{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2);margin:0 0 12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px 20px;margin-top:20px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);
+    text-align:left;font-weight:500;padding:0 8px 8px;white-space:nowrap}
+  th.r,td.r{text-align:right}
+  td{padding:5px 8px;border-top:1px solid var(--line);vertical-align:middle}
+  input[type=number],input[type=text],select{
+    background:var(--panel2);border:1px solid var(--line);border-radius:7px;color:var(--ink);
+    font-family:var(--mono);font-size:12px;padding:5px 7px;width:100%;outline:none}
+  input:focus,select:focus{border-color:var(--cyan)}
+  input[type=number]{text-align:right;font-variant-numeric:tabular-nums}
+  select{font-family:var(--sans);cursor:pointer}
+  td.name input{font-family:var(--sans);text-align:left}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .cost{color:var(--cyan2);font-weight:600}
+  .muted{color:var(--ink3)}
+  .det td{color:var(--ink3)}
+  button{font-family:var(--sans);font-size:12px;font-weight:500;border-radius:8px;cursor:pointer;
+    border:1px solid var(--line);background:transparent;color:var(--ink2);padding:6px 12px}
+  button:hover{border-color:var(--cyan);color:var(--ink)}
+  button.ghost{border:0;color:var(--ink3);padding:4px 8px}
+  button.ghost:hover{color:var(--neg)}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:14px}
+  .metric{background:var(--panel2);border-radius:10px;padding:12px 14px}
+  .metric .lbl{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+  .metric .val{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:22px;margin-top:3px}
+  .big{grid-column:span 2}
+  .big .val{font-size:30px;color:var(--cyan2)}
+  .bad .val{color:var(--neg)}
+  .ctrls{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .ctrl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2)}
+  input[type=range]{accent-color:var(--cyan)}
+  .pill{font-family:var(--mono);font-size:11px;color:var(--cyan2);min-width:42px;text-align:right}
+  .foot{margin-top:22px;font-size:11px;color:var(--ink3);line-height:1.7}
+  a{color:var(--cyan2)}
+  .tag{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--indigo);border:1px solid var(--line);border-radius:5px;padding:2px 6px;margin-left:6px}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+  .field .hint{font-size:10px;color:var(--ink3)}
+  .fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+  .swing{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+  .swcell{flex:1;min-width:160px;background:var(--panel2);border-radius:10px;padding:12px 14px}
+  .swcell.no{border:1px solid rgba(240,100,124,.3)}
+  .swcell.yes{border:1px solid rgba(25,194,219,.35)}
+  .swcell .lbl{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+  .swcell .v{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:26px;margin-top:3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">AI Deal Operations</div>
+  <h1>Pipeline cost calculator</h1>
+  <div class="sub">Estimate the $ to run one deal through the agentic pipeline if the APIs were connected. Everything is editable. The author stage is modelled as a real tool‑loop so you can see the prompt‑caching swing directly.</div>
+
+  <!-- MODEL PRICES -->
+  <div class="card">
+    <h2>Model prices — $ per 1M tokens <span class="tag">editable</span></h2>
+    <table>
+      <thead><tr>
+        <th>Model</th><th class="r">Input</th><th class="r">Output</th>
+        <th class="r">Cache read</th><th class="r" style="color:var(--ink3)">context</th>
+      </tr></thead>
+      <tbody id="modelBody"></tbody>
+    </table>
+    <div class="sub" style="margin-top:10px">Pricing per the Claude API reference (cached 2026‑05‑26). Cache‑read ≈ 0.1× input. Adjust if your rates differ.</div>
+  </div>
+
+  <!-- THE GLOBAL LEVER -->
+  <div class="card">
+    <div class="ctrls" style="margin-top:0">
+      <div class="ctrl">
+        <label for="hit" style="font-weight:500">Prompt‑cache hit rate</label>
+        <input type="range" id="hit" min="0" max="95" value="0" oninput="recompute()" style="width:200px">
+        <span class="pill" id="hitVal">0%</span>
+      </div>
+      <div class="ctrl">
+        <label for="deals"># deals</label>
+        <input type="number" id="deals" value="1" min="1" step="1" style="width:90px" oninput="recompute()">
+      </div>
+      <div class="ctrl muted" style="font-size:12px">0% = worst case (no caching). Drag right to see the swing.</div>
+    </div>
+  </div>
+
+  <!-- AUTHOR LOOP -->
+  <div class="card">
+    <h2>Author loop — the cache lever <span class="tag">where the money is</span></h2>
+    <div class="sub" style="margin:-4px 0 14px">An autonomous research agent re‑sends its growing transcript every turn. Without caching you re‑pay full price for the stable prefix on every turn — that's the quadratic blow‑up. The breakpoint is whether that prefix is cached.</div>
+    <div class="fgrid">
+      <div class="field"><label>Model</label><select id="alModel" onchange="recompute()"></select></div>
+      <div class="field"><label>Tool‑loop turns</label><input type="number" id="alT" value="35" step="1" oninput="recompute()"><span class="hint">model ↔ tool round‑trips</span></div>
+      <div class="field"><label>Stable prefix (tok)</label><input type="number" id="alP" value="12000" step="1000" oninput="recompute()"><span class="hint">spec + schema, cacheable</span></div>
+      <div class="field"><label>New tokens / turn</label><input type="number" id="alD" value="6000" step="500" oninput="recompute()"><span class="hint">fetched S‑1 chunks, results, reasoning</span></div>
+      <div class="field"><label>Output / turn</label><input type="number" id="alO" value="900" step="100" oninput="recompute()"><span class="hint">tool‑call args + thinking</span></div>
+    </div>
+    <div class="swing">
+      <div class="swcell no"><div class="lbl">Author — NO cache (0%)</div><div class="v num bad" id="alNo" style="color:var(--neg)">—</div></div>
+      <div class="swcell yes"><div class="lbl">Author — at <span id="alHitLbl">0%</span> cache</div><div class="v num cost" id="alYes">—</div></div>
+      <div class="swcell"><div class="lbl">Tokens processed (input)</div><div class="v num" id="alProc" style="font-size:20px;color:var(--ink2)">—</div></div>
+    </div>
+    <div class="sub" id="alExplain" style="margin-top:12px"></div>
+  </div>
+
+  <!-- REVIEW STAGES -->
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">Review stages <span class="tag">critique ↔ revise · up to 3 rounds</span></h2>
+      <div class="row"><button onclick="addStage()">+ Stage</button><button onclick="reset()">Reset defaults</button></div>
+    </div>
+    <table style="margin-top:12px">
+      <thead><tr>
+        <th style="width:30%">Stage</th><th style="width:20%">Model</th>
+        <th class="r">Input tok</th><th class="r">Output tok</th>
+        <th class="r">Cost</th><th></th>
+      </tr></thead>
+      <tbody id="stageBody"></tbody>
+    </table>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="card">
+    <h2>Estimate</h2>
+    <div class="grid">
+      <div class="metric big bad"><div class="lbl">Cost / deal — worst case (no cache)</div><div class="val num" id="rNoCache">—</div></div>
+      <div class="metric big"><div class="lbl">Cost / deal — at <span id="rHitLbl">0%</span> cache</div><div class="val num" id="rPerDeal">—</div></div>
+      <div class="metric"><div class="lbl">Total tokens / deal</div><div class="val num" id="rTok">—</div></div>
+      <div class="metric"><div class="lbl" id="rNlbl">× N deals</div><div class="val num cost" id="rTotal">—</div></div>
+      <div class="metric"><div class="lbl">Per 100 deals</div><div class="val num" id="r100">—</div></div>
+    </div>
+    <div class="foot" id="note"></div>
+  </div>
+
+  <div class="foot">
+    <b>Defaults are the worst case</b> for a SpaceX‑grade deal: 35‑turn author loop ingesting the 11.8&nbsp;MB S‑1, the full 3 critique↔revise rounds, and 0% cache. The author loop is the right‑skew — the flat earlier estimate hid it inside one number. <b>To get to realistic</b>, drag the cache slider to ~90%, drop the loop to ~20 turns, and trim to 1–2 rounds; a lean GCC/MENA private placement (no mega‑filing) is far cheaper. Pipeline per <span class="muted">NEW_DEAL.md / HEADLESS.md</span>; coherence gate runs in code at $0.
+  </div>
+</div>
+
+<script>
+const MODELS = [
+  {name:"Fable 5",    in:10, out:50, cr:1.00, ctx:"1M"},
+  {name:"Opus 4.8",   in:5,  out:25, cr:0.50, ctx:"1M"},
+  {name:"Opus 4.7",   in:5,  out:25, cr:0.50, ctx:"1M"},
+  {name:"Sonnet 4.6", in:3,  out:15, cr:0.30, ctx:"1M"},
+  {name:"Haiku 4.5",  in:1,  out:5,  cr:0.10, ctx:"200K"},
+];
+const DEFAULT_STAGES = [
+  {name:"Coherence gate (in‑code)", m:1, in:0,     out:0,     det:true },
+  {name:"Director critique #1",     m:1, in:28000, out:4000,  det:false},
+  {name:"Revise #1",                m:1, in:40000, out:16000, det:false},
+  {name:"Director critique #2",     m:1, in:32000, out:4000,  det:false},
+  {name:"Revise #2",                m:1, in:42000, out:14000, det:false},
+  {name:"Director critique #3",     m:1, in:34000, out:3500,  det:false},
+  {name:"Revise #3",                m:1, in:44000, out:12000, det:false},
+];
+let stages = clone(DEFAULT_STAGES);
+function clone(x){return JSON.parse(JSON.stringify(x))}
+const fmt = n => Math.round(n).toLocaleString();
+const usd = n => "$"+n.toLocaleString(undefined,{minimumFractionDigits:n<100?2:0,maximumFractionDigits:n<10?2:2});
+
+function renderModels(){
+  document.getElementById("modelBody").innerHTML = MODELS.map((m,i)=>`
+    <tr><td>${m.name}</td>
+      <td class="r"><input type="number" step="0.5"  value="${m.in}"  oninput="MODELS[${i}].in=+this.value;recompute()"></td>
+      <td class="r"><input type="number" step="0.5"  value="${m.out}" oninput="MODELS[${i}].out=+this.value;recompute()"></td>
+      <td class="r"><input type="number" step="0.05" value="${m.cr}"  oninput="MODELS[${i}].cr=+this.value;recompute()"></td>
+      <td class="r muted num">${m.ctx}</td></tr>`).join("");
+  document.getElementById("alModel").innerHTML = MODELS.map((m,i)=>`<option value="${i}" ${i===1?"selected":""}>${m.name}</option>`).join("");
+}
+function modelOptions(sel){return MODELS.map((m,i)=>`<option value="${i}" ${i===sel?"selected":""}>${m.name}</option>`).join("")}
+function renderStages(){
+  document.getElementById("stageBody").innerHTML = stages.map((s,i)=>`
+    <tr class="${s.det?"det":""}">
+      <td class="name"><input type="text" value="${s.name}" oninput="stages[${i}].name=this.value"></td>
+      <td>${s.det?'<span class="muted">— none —</span>':`<select onchange="stages[${i}].m=+this.value;recompute()">${modelOptions(s.m)}</select>`}</td>
+      <td class="r"><input type="number" step="1000" value="${s.in}"  ${s.det?"disabled":""} oninput="stages[${i}].in=+this.value;recompute()"></td>
+      <td class="r"><input type="number" step="500"  value="${s.out}" ${s.det?"disabled":""} oninput="stages[${i}].out=+this.value;recompute()"></td>
+      <td class="r cost num" id="sc${i}">—</td>
+      <td class="r"><button class="ghost" onclick="stages.splice(${i},1);renderStages();recompute()">✕</button></td>
+    </tr>`).join("");
+}
+function addStage(){stages.push({name:"New stage",m:1,in:10000,out:3000,det:false});renderStages();recompute()}
+function reset(){stages=clone(DEFAULT_STAGES);renderStages();
+  document.getElementById("alT").value=35;document.getElementById("alP").value=12000;
+  document.getElementById("alD").value=6000;document.getElementById("alO").value=900;
+  document.getElementById("alModel").value=1;document.getElementById("hit").value=0;
+  recompute();}
+
+// blended $/1M on input given a cache-hit fraction h (cache-read on the hit portion)
+function blendIn(m,h){return h*m.cr + (1-h)*m.in}
+
+function authorCost(h){
+  const m = MODELS[+document.getElementById("alModel").value];
+  const T = Math.max(1,+document.getElementById("alT").value||1);
+  const P = +document.getElementById("alP").value||0;
+  const D = +document.getElementById("alD").value||0;
+  const O = +document.getElementById("alO").value||0;
+  const ctxSum = T*P + D*T*(T-1)/2;            // total input PROCESSED across the loop
+  const unique = P + (T-1)*D;                   // tokens that exist by the end (full price once)
+  const reread = Math.max(0, ctxSum - unique);  // re-sent context (cacheable)
+  const outTok = T*O;
+  const inCost = (unique*m.in + reread*blendIn(m,h))/1e6;
+  const outCost = outTok*m.out/1e6;
+  return {total:inCost+outCost, ctxSum, unique, reread, outTok, inCost, outCost};
+}
+
+function recompute(){
+  const h = +document.getElementById("hit").value/100;
+  document.getElementById("hitVal").textContent = Math.round(h*100)+"%";
+  document.getElementById("alHitLbl").textContent = Math.round(h*100)+"%";
+  document.getElementById("rHitLbl").textContent = Math.round(h*100)+"%";
+
+  // author loop
+  const aNo = authorCost(0), aHit = authorCost(h);
+  document.getElementById("alNo").textContent = usd(aNo.total);
+  document.getElementById("alYes").textContent = usd(aHit.total);
+  document.getElementById("alProc").textContent = fmt(aNo.ctxSum);
+  document.getElementById("alExplain").innerHTML =
+    `Across ${fmt((+document.getElementById("alT").value)||0)} turns the agent <b>processes ${fmt(aNo.ctxSum)} input tokens</b>, but only ${fmt(aNo.unique)} are unique — the other ${fmt(aNo.reread)} are the prefix re‑sent each turn. Caching bills those re‑reads at ~0.1×. That's the whole swing: <b>${usd(aNo.total)} → ${usd(aHit.total)}</b>.`;
+
+  // review stages
+  let stIn=0,stOut=0,stCost=0,stCostNo=0;
+  stages.forEach((s,i)=>{
+    let c=0,cNo=0;
+    if(!s.det){const m=MODELS[s.m];
+      c = (s.in*blendIn(m,h)+s.out*m.out)/1e6;
+      cNo = (s.in*m.in+s.out*m.out)/1e6;
+      stCost+=c; stCostNo+=cNo; stIn+=s.in; stOut+=s.out;}
+    const el=document.getElementById("sc"+i); if(el) el.textContent = s.det?"$0":usd(c);
+  });
+
+  const perDeal = aHit.total + stCost;
+  const noCache = aNo.total + stCostNo;
+  const totTok = aNo.ctxSum + aNo.outTok + stIn + stOut;
+  const n = Math.max(1,+document.getElementById("deals").value||1);
+
+  document.getElementById("rNoCache").textContent = usd(noCache);
+  document.getElementById("rPerDeal").textContent = usd(perDeal);
+  document.getElementById("rTok").textContent = fmt(totTok);
+  document.getElementById("rNlbl").textContent = "× "+fmt(n)+" deals";
+  document.getElementById("rTotal").textContent = usd(perDeal*n);
+  document.getElementById("r100").textContent = usd(perDeal*100);
+  document.getElementById("note").textContent =
+    `Author ${usd(aHit.total)} + review rounds ${usd(stCost)} = ${usd(perDeal)}/deal at ${Math.round(h*100)}% cache. Worst case (0% cache) is ${usd(noCache)}. The coherence gate runs in code at $0.`;
+}
+renderModels(); renderStages(); recompute();
+</script>
+</body>
+</html>
