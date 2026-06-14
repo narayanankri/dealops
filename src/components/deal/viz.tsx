@@ -1,6 +1,31 @@
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/cn'
 import { usdm } from '@/lib/format'
 import type { CapTableRow } from '@/types'
+
+// Mount-time 0→1 progress (easeOutCubic) used to "form" charts when their tab opens.
+// Respects prefers-reduced-motion by snapping straight to 1.
+function useFormIn(durationMs = 700): number {
+  const [p, setP] = useState(0)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setP(1)
+      return
+    }
+    let raf = 0
+    let start = 0
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3)
+    const tick = (ts: number) => {
+      if (!start) start = ts
+      const t = Math.min(1, (ts - start) / durationMs)
+      setP(ease(t))
+      if (t < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [durationMs])
+  return p
+}
 
 // ── Cap table / ownership structure ──
 const capColor: Record<CapTableRow['type'], string> = {
@@ -59,7 +84,9 @@ export function RadarChart({ data, max = 100 }: { data: RadarDatum[]; max?: numb
   const ang = (i: number) => -Math.PI / 2 + (i * 2 * Math.PI) / n
   const pt = (i: number, r: number): [number, number] => [cx + r * Math.cos(ang(i)), cy + r * Math.sin(ang(i))]
   const poly = (r: number) => data.map((_, i) => pt(i, r).join(',')).join(' ')
-  const valuePoly = data.map((d, i) => pt(i, (R * Math.max(0, Math.min(d.value, max))) / max).join(',')).join(' ')
+  const p = useFormIn() // 0→1 on mount; the value shape grows from the centre
+  const valueR = (d: RadarDatum) => ((R * Math.max(0, Math.min(d.value, max))) / max) * p
+  const valuePoly = data.map((d, i) => pt(i, valueR(d)).join(',')).join(' ')
   const rings = [0.25, 0.5, 0.75, 1]
 
   return (
@@ -72,13 +99,13 @@ export function RadarChart({ data, max = 100 }: { data: RadarDatum[]; max?: numb
         return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="var(--color-line)" strokeWidth={1} opacity={0.55} />
       })}
 
-      <polygon points={valuePoly} fill="var(--color-accent)" fillOpacity={0.16} stroke="var(--color-accent)" strokeWidth={2} strokeLinejoin="round" />
+      <polygon points={valuePoly} fill="var(--color-accent)" fillOpacity={0.16 * p} stroke="var(--color-accent)" strokeWidth={2} strokeLinejoin="round" />
 
       {data.map((d, i) => {
-        const [x, y] = pt(i, (R * Math.max(0, Math.min(d.value, max))) / max)
+        const [x, y] = pt(i, valueR(d))
         const c = toneVar[d.tone ?? 'accent']
         return (
-          <g key={i}>
+          <g key={i} opacity={p}>
             {d.dim && <circle cx={x} cy={y} r={7.5} fill="none" stroke={c} strokeOpacity={0.45} strokeDasharray="2.5 2.5" />}
             <circle cx={x} cy={y} r={4} fill={c} stroke="var(--color-panel)" strokeWidth={1.5} />
           </g>
