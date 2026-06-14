@@ -1,0 +1,2 @@
+# Headless-authored deals land here as <id>.json (see scripts/author-deal.mjs).
+# Picked up automatically by src/data/index.ts and npm run gate.

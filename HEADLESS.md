@@ -40,13 +40,30 @@ repeat up to maxRounds:
 
 It is written entirely against `LLMProvider` + the real engine. Swapping `conversationProvider` → `createAnthropicProvider(...)` makes the same loop run unattended. Nothing in the loop changes.
 
-## Honest gap list — what's still needed before it's truly autonomous
+## Built — the headless path, ready for a key
 
-1. **Authoring needs tools, not a single completion.** Real authoring requires *web research*. Today the author (me) has web search/fetch; a headless author must run the Anthropic **tool-use loop** (web search + fetch) inside `provider.author()`. The current `author()` is a single Messages call — it is the right *seam* but not yet a research agent. **This is the biggest remaining piece.**
-2. **A live key + prompt/JSON hardening.** `createAnthropicProvider` is structurally real but untested against a key: the JSON-`Deal` contract, retries, and `model` choice need tuning on real output. `structuralGaps()` in the orchestrator already rejects malformed payloads and feeds them back for revision.
-3. **Registration = persistence, ideally deals-as-data.** Accepted deals are still added as TS modules imported in `src/data/index.ts` — a code edit that needs `tsc`. For a hands-off loop, move to **deals-as-JSON loaded dynamically** (glob a directory), so authoring writes a file and the gate validates it with no compile step. The engine already consumes a plain `Deal` object regardless of source, so this is a loader change, not an engine change.
-4. **CI.** Wire `npm run gate` (and `tsc -b`) into CI so a blocking deal can never merge — the same gate, enforced on every change.
-5. **Cost/observability.** The loop should cap rounds (it does: `maxRounds`), log token spend, and persist the transcript per deal for audit.
+The whole path is wired and type-checked; it only lacks an `ANTHROPIC_API_KEY` (verified end-to-end with a fake key — every module loads and drives to the live API boundary, failing only at auth). Run it with `ANTHROPIC_API_KEY=… npm run author -- "<company + situation>"`.
+
+1. **Authoring is a research tool-loop.** ✅ `provider.author()` runs the Anthropic server-tool loop — `web_search` + `web_fetch` — continuing through `pause_turn` until the model returns the final Deal JSON. (Was "the biggest remaining piece.")
+2. **Prompt caching.** ✅ See "Caching contract" below — the cost lever we identified, built in.
+3. **Registration = deals-as-JSON.** ✅ `npm run author` writes the accepted deal to `src/data/generated/<id>.json`; `src/data/index.ts` globs that directory (`import.meta.glob('./generated/*.json')`) so the app and `npm run gate` pick it up with **no code edit and no `tsc`**.
+4. **Cost / observability.** ✅ `provider.usage` accounts fresh-in / cache-read / cache-write / out per call; the runner prints tokens + an estimated `$` (`estimateCostUSD` in `runHeadless.ts`); the orchestrator caps rounds (`maxRounds`).
+
+## Still needs a live key to *tune* (the honest caveat)
+
+1. **JSON-contract reliability.** `createAnthropicProvider` is structurally real but untested against real output: whether the model reliably emits clean Deal-shaped JSON after a long research loop. `structuralGaps()` in the orchestrator already rejects malformed payloads and feeds them back for revision — but the prompt may need tuning.
+2. **Streaming for large outputs.** `send()` is non-streaming (32k `max_tokens`), which risks an HTTP timeout on the biggest deals; switch to streaming before production volume.
+3. **CI.** Wire `npm run gate` (and `tsc -b`) into CI so a blocking deal can never merge — the same gate, enforced on every change.
+
+## Caching contract — keep the prefix stable
+
+Prompt caching is the dominant cost lever (~3–6× on the author loop, which re-sends its transcript every turn). It is wired as: `cache_control` on the **frozen system block** (spec + schema + tool list) with a **1h TTL** so it stays warm across a whole batch run, plus a **rolling 5m breakpoint** on the latest transcript message within a deal's loop. To keep it *effective*, do not break these invariants:
+
+1. **Never interpolate per-request data into the system prompt** — no timestamps, IDs, the brief, or the mandate. Those belong in `messages` (after the breakpoint), never in the cached prefix.
+2. **Keep `RESEARCH_TOOLS` a module constant.** Tools render *before* system; reordering or rebuilding them per-call invalidates everything downstream.
+3. **One model per run.** Caches are model-scoped — switching mid-run is a cold start.
+4. **Serialize deterministically.** Any JSON in the cached prefix must stringify the same bytes each call.
+5. **Verify, don't assume.** After the first call, `provider.usage.cacheReadInputTokens` must be `> 0`. If it stays `0` across calls, a silent invalidator crept in — find it before scaling.
 
 ## The rule that keeps this on track
 

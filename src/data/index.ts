@@ -17,9 +17,15 @@ import { spacex } from './deals/spacex'
 import { memoDepth } from './deals/memo-depth'
 import { fundAssignment } from './funds'
 
+// Generated deals — authored headlessly (scripts/author-deal.mjs writes them as JSON) and picked up
+// automatically here with NO code edit. The glob resolves to {} when the directory is empty, so this
+// is inert until the autonomous pipeline produces its first deal.
+const generatedModules = import.meta.glob('./generated/*.json', { eager: true }) as Record<string, { default: Deal }>
+const generatedDeals: Deal[] = Object.values(generatedModules).map((m) => m.default)
+
 // Real companies, sourced from public funding announcements.
 // Financials/margins/current valuations are inferred or estimated and labelled per deal.
-const allDeals: Deal[] = [tabby, tamara, lean, floward, nana, propertyFinder, talabat, luluRetail, americana, khazna, mntHalan, tarabut, ramp, plaid, spacex]
+const allDeals: Deal[] = [tabby, tamara, lean, floward, nana, propertyFinder, talabat, luluRetail, americana, khazna, mntHalan, tarabut, ramp, plaid, spacex, ...generatedDeals]
 
 export const seedDeals: Deal[] = allDeals.map((d) => {
   const fundId = fundAssignment[d.id] ?? 'growth-fund-1'
