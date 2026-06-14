@@ -205,3 +205,51 @@ h1, h2 {
     margin: 15mm 14mm 17mm;
   }
 }
+
+/* ───────────────────────────────────────────────────────────
+   Landing page — "The Instrument" boots up.
+   Considered motion: content rises in, the gauge calibrates,
+   the coherence ledger resolves, the valuation range assembles.
+   ─────────────────────────────────────────────────────────── */
+@keyframes lp-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes lp-tick {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes lp-bar {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes lp-marker {
+  0% { opacity: 0; transform: translate(0, -10px); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: translate(0, 0); }
+}
+@keyframes lp-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes lp-sweep {
+  from { transform: translateY(-120%); }
+  to { transform: translateY(320%); }
+}
+.lp-rise { animation: lp-rise 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.lp-tick { animation: lp-tick 0.5s ease both; }
+.lp-bar { transform-origin: left center; animation: lp-bar 1.1s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.lp-marker { animation: lp-marker 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.lp-float { animation: lp-float 5s ease-in-out infinite; }
+.lp-glow { box-shadow: 0 0 0 1px rgba(25, 194, 219, 0.25), 0 30px 80px -20px rgba(25, 194, 219, 0.28), 0 20px 60px -30px rgba(0, 0, 0, 0.8); }
+.lp-scan { position: relative; overflow: hidden; }
+.lp-scan::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent, rgba(25, 194, 219, 0.18), transparent);
+  height: 40%; animation: lp-sweep 1s ease-in-out; pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-rise, .lp-tick, .lp-bar, .lp-marker, .lp-float { animation: none; opacity: 1; transform: none; }
+  .lp-scan::after { animation: none; opacity: 0; }
+}

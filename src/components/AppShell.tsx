@@ -114,6 +114,20 @@ export function AppShell({ children }: { children: ReactNode }) {
               )
             })}
           </div>
+
+          <button
+            onClick={() => {
+              try {
+                localStorage.removeItem('dealops_authed')
+              } catch {
+                /* ignore */
+              }
+              window.location.reload()
+            }}
+            className="mt-3 w-full rounded-lg px-3 py-2 text-left text-xs text-ink-3 transition-colors hover:bg-panel-2 hover:text-ink-2"
+          >
+            ← Sign out
+          </button>
         </div>
       </aside>
 
