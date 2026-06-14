@@ -7,6 +7,7 @@ import { ICQueue } from '@/pages/ICQueue'
 import { MandatePage } from '@/pages/Mandate'
 import { AddDeal } from '@/pages/AddDeal'
 import { Landing } from '@/pages/Landing'
+import { Boot } from '@/components/Boot'
 
 const AUTH_KEY = 'dealops_authed'
 
@@ -18,6 +19,9 @@ export default function App() {
       return false
     }
   })
+  // booting is true only immediately after a sign-in click — never on an already-authed reload,
+  // so the calibration splash is a first-impression flourish, not a tax on every refresh.
+  const [booting, setBooting] = useState(false)
 
   if (!authed) {
     return (
@@ -29,10 +33,13 @@ export default function App() {
             /* ignore */
           }
           setAuthed(true)
+          setBooting(true)
         }}
       />
     )
   }
+
+  if (booting) return <Boot onDone={() => setBooting(false)} />
 
   return (
     <AppShell>

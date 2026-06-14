@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/cn'
 import { useApp } from '@/lib/store'
 import { usdm } from '@/lib/format'
+import { AmbientField } from '@/components/AmbientField'
 
 const nav = [
   { to: '/', label: 'Pipeline', end: true },
@@ -44,8 +45,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const icCount = deals.filter((d) => d.fundId === activeFundId && d.status === 'sent-to-ic').length
 
   return (
-    <div className="flex h-full">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-line/70 bg-panel/50 px-4 py-5">
+    <div className="relative flex h-full">
+      <AmbientField />
+      <aside className="relative z-10 flex w-60 shrink-0 flex-col border-r border-line/70 bg-panel/60 px-4 py-5">
         <button onClick={() => navigate('/')} className="mb-8 flex items-center gap-2.5 px-1 text-left">
           <span className="grid h-8 w-8 place-items-center rounded-lg border border-line bg-panel-2">
             <GaugeMark />
@@ -131,7 +133,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
+      <main className="relative z-10 min-w-0 flex-1 overflow-y-auto">{children}</main>
     </div>
   )
 }

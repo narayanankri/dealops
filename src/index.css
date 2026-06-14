@@ -261,3 +261,21 @@ h1, h2 {
   .lp-rise, .lp-tick, .lp-bar, .lp-marker, .lp-float { animation: none; opacity: 1; transform: none; }
   .lp-scan::after { animation: none; opacity: 0; }
 }
+
+/* ───────────────────────────────────────────────────────────
+   In-app "computation theatre" — rows settle in, the boot splash
+   calibrates. Used across the workspace, not just the landing.
+   ─────────────────────────────────────────────────────────── */
+@keyframes app-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes app-boot-out {
+  from { opacity: 1; }
+  to { opacity: 0; visibility: hidden; }
+}
+.app-fade { animation: app-fade 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.app-boot-out { animation: app-boot-out 0.5s ease 0.05s both; }
+@media (prefers-reduced-motion: reduce) {
+  .app-fade { animation: none; opacity: 1; transform: none; }
+}

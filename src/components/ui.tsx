@@ -3,6 +3,13 @@ import { cn } from '@/lib/cn'
 import type { Basis, Confidence, DealStatus, Verdict } from '@/types'
 import { basisLabel, confidenceLabel, scoreTone, verdictLabel, verdictTone } from '@/lib/format'
 import { STATUS_LABEL, STATUS_TONE } from '@/lib/status'
+import { useCountUp } from '@/lib/useCountUp'
+
+// A figure that counts up to its value — the "computed live" flourish.
+export function Counter({ value, dur = 900, format }: { value: number; dur?: number; format?: (n: number) => string }) {
+  const v = useCountUp(value, dur)
+  return <>{format ? format(v) : Math.round(v).toLocaleString()}</>
+}
 
 type Tone = 'pos' | 'warn' | 'neg' | 'neutral' | 'accent'
 
@@ -128,8 +135,9 @@ const toneVar: Record<Tone, string> = {
   accent: 'var(--color-accent)',
 }
 export function ConfidenceRing({ score, size = 60, ticks = 36 }: { score: number; size?: number; ticks?: number }) {
+  const val = useCountUp(score, 1100)
   const tone = scoreTone(score) as Tone
-  const pct = Math.max(0, Math.min(100, score)) / 100
+  const pct = Math.max(0, Math.min(100, val)) / 100
   const filled = Math.round(pct * ticks)
   const cx = size / 2
   const cy = size / 2
@@ -162,7 +170,7 @@ export function ConfidenceRing({ score, size = 60, ticks = 36 }: { score: number
           />
         ))}
       </svg>
-      <span className={cn('absolute font-semibold tnum', toneText[tone], size >= 56 ? 'text-base' : 'text-xs')}>{score}</span>
+      <span className={cn('absolute font-semibold tnum', toneText[tone], size >= 56 ? 'text-base' : 'text-xs')}>{Math.round(val)}</span>
     </div>
   )
 }

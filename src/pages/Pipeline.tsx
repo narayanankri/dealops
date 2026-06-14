@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '@/lib/store'
-import { Card, ScoreChip, StatusPill, ActionsMenu, Button } from '@/components/ui'
+import { Card, ScoreChip, StatusPill, ActionsMenu, Button, Counter } from '@/components/ui'
 import { usdm } from '@/lib/format'
 import { cn } from '@/lib/cn'
 import { STATUS_FILTER_ORDER, STATUS_LABEL, STATUS_TONE, isActive, statusActions } from '@/lib/status'
@@ -129,13 +129,17 @@ export function Pipeline() {
               )}
             >
               <div className="text-[11px] font-medium tracking-wide text-ink-3 uppercase">{STATUS_LABEL[s]}</div>
-              <div className={cn('mt-1 text-2xl font-semibold tnum', count === 0 ? 'text-ink-3/60' : statusCardTone[STATUS_TONE[s]])}>{count}</div>
+              <div className={cn('mt-1 text-2xl font-semibold tnum', count === 0 ? 'text-ink-3/60' : statusCardTone[STATUS_TONE[s]])}>
+                <Counter value={count} dur={700} />
+              </div>
             </button>
           )
         })}
         <Card className="px-4 py-3.5">
           <div className="text-[11px] font-medium tracking-wide text-ink-3 uppercase">Capital in pipeline</div>
-          <div className="mt-1 text-2xl font-semibold text-ink tnum">{usdm(capital)}</div>
+          <div className="mt-1 text-2xl font-semibold text-ink tnum">
+            <Counter value={capital} format={usdm} dur={1000} />
+          </div>
           <div className="mt-0.5 text-[11px] text-ink-3">excl. rejected & archived</div>
         </Card>
       </div>
@@ -182,8 +186,8 @@ export function Pipeline() {
             </tr>
           </thead>
           <tbody>
-            {shown.map((deal) => (
-              <Row key={deal.id} deal={deal} a={analysis.get(deal.id)!} onOpen={() => navigate(`/deal/${deal.id}`)} onAction={(to) => setStatus(deal.id, to)} />
+            {shown.map((deal, i) => (
+              <Row key={deal.id} index={i} deal={deal} a={analysis.get(deal.id)!} onOpen={() => navigate(`/deal/${deal.id}`)} onAction={(to) => setStatus(deal.id, to)} />
             ))}
             {shown.length === 0 && (
               <tr>
@@ -240,9 +244,13 @@ function Th({ label, k, sort, setSort, align = 'left', className }: { label: str
   )
 }
 
-function Row({ deal, a, onOpen, onAction }: { deal: Deal; a: Analysis; onOpen: () => void; onAction: (to: DealStatus) => void }) {
+function Row({ deal, a, onOpen, onAction, index = 0 }: { deal: Deal; a: Analysis; onOpen: () => void; onAction: (to: DealStatus) => void; index?: number }) {
   return (
-    <tr onClick={onOpen} className="group cursor-pointer border-b border-line-soft/60 transition-colors last:border-0 hover:bg-panel-2/60 [&>td]:align-top">
+    <tr
+      onClick={onOpen}
+      className="app-fade group cursor-pointer border-b border-line-soft/60 transition-colors last:border-0 hover:bg-panel-2/60 [&>td]:align-top"
+      style={{ animationDelay: `${Math.min(index * 35, 520)}ms` }}
+    >
       <td className="px-5 py-3.5 align-top">
         <div className="font-medium text-ink group-hover:text-accent-2">{deal.name}</div>
         <div className="mt-0.5 max-w-[460px] text-xs leading-relaxed text-ink-3 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">{deal.oneLiner}</div>
