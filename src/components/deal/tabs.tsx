@@ -963,13 +963,88 @@ export function ValuationTab({ deal, a }: { deal: Deal; a: Analysis }) {
           </div>
         </>
       ) : (
-        <Card className="px-6 py-5">
-          <SectionTitle hint="historical actuals + forecast">Operating & financial picture</SectionTitle>
-          <PnLTable financials={deal.financials} />
-          <p className="mt-3 text-xs text-ink-3">Full statements (P&L · balance sheet · cash flow), a DCF build-up and sensitivities appear here when the deal is added with financials.</p>
-        </Card>
+        <>
+          <Card className="px-6 py-5">
+            <SectionTitle hint="historical actuals + forecast">Operating & financial picture</SectionTitle>
+            <PnLTable financials={deal.financials} />
+          </Card>
+          <LockedModelPreview />
+        </>
       )}
     </div>
+  )
+}
+
+// ── Prominent placeholder shown when a deal is screened WITHOUT a full financial model. ──
+// Rather than a one-line caveat, it makes the product's depth visible: the shape of the
+// sections that render the moment a deal is added with financials.
+function LockGlyph() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="4" y="11" width="16" height="9" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
+  )
+}
+const GhostBar = ({ w }: { w: string }) => <div className="h-2 rounded-full bg-ink-3/25" style={{ width: w }} />
+function GhostStatements() {
+  return (
+    <div className="space-y-2.5">
+      {['78%', '60%', '70%', '48%', '66%'].map((w, i) => (
+        <div key={i} className="flex items-center gap-3">
+          <GhostBar w="32%" />
+          <div className="flex-1" />
+          <GhostBar w={w} />
+        </div>
+      ))}
+    </div>
+  )
+}
+function GhostDcf() {
+  return (
+    <div className="flex h-[72px] items-end gap-2">
+      {[38, 52, 64, 77, 90].map((h, i) => (
+        <div key={i} className="flex-1 rounded-t-sm bg-accent/35" style={{ height: `${h}%` }} />
+      ))}
+    </div>
+  )
+}
+function GhostGrid() {
+  return (
+    <div className="grid grid-cols-4 gap-1.5">
+      {Array.from({ length: 16 }).map((_, i) => (
+        <div key={i} className="h-4 rounded-sm" style={{ background: `color-mix(in srgb, var(--color-indigo) ${18 + (i % 4) * 16}%, transparent)` }} />
+      ))}
+    </div>
+  )
+}
+function LockedModelPreview() {
+  const items = [
+    { title: '3-statement model', sub: 'P&L · balance sheet · cash flow', render: <GhostStatements /> },
+    { title: 'DCF build-up', sub: 'FCFF → enterprise → equity value', render: <GhostDcf /> },
+    { title: 'Sensitivity grids', sub: 'WACC × growth · entry × exit', render: <GhostGrid /> },
+  ]
+  return (
+    <Card className="relative overflow-hidden border-dashed px-6 py-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <SectionTitle hint="driver-based model">Full financial model</SectionTitle>
+        <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-panel-2 px-2.5 py-1 text-[11px] font-medium text-ink-3">
+          <LockGlyph /> Not provided for this deal
+        </span>
+      </div>
+      <p className="mt-1 mb-5 max-w-2xl text-sm leading-relaxed text-ink-2">
+        This deal was screened from summary figures. Add it with financials and this section becomes a complete driver-based model — projected statements that balance by construction, a full DCF build-up, and live WACC and entry/exit sensitivities.
+      </p>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {items.map((it) => (
+          <div key={it.title} className="rounded-xl border border-line/70 bg-panel-2/40 p-4">
+            <div className="text-[13px] font-semibold text-ink">{it.title}</div>
+            <div className="mt-0.5 text-[11px] text-ink-3">{it.sub}</div>
+            <div className="mt-4 opacity-50 [mask-image:linear-gradient(180deg,#000_55%,transparent)]">{it.render}</div>
+          </div>
+        ))}
+      </div>
+    </Card>
   )
 }
 
