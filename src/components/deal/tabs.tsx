@@ -95,7 +95,7 @@ export function OverviewTab({ deal, a }: { deal: Deal; a: Analysis }) {
           {n.revenueLines?.length ? <RevenueLines lines={n.revenueLines} /> : <p className="text-sm leading-relaxed text-ink-2">{n.revenueModel}</p>}
         </Card>
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5">
           <Card className="px-6 py-5">
             <SectionTitle>The case for</SectionTitle>
             <ul className="space-y-2.5 text-sm text-ink-2">
@@ -173,6 +173,15 @@ function WhyNowBanner({ deal }: { deal: Deal }) {
   )
 }
 
+// Chevron for collapsible <details> rows — rotates when the row is open.
+function Chevron({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden className={cn('h-3.5 w-3.5 shrink-0 text-ink-3 transition-transform duration-200 group-open:rotate-90', className)}>
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  )
+}
+
 // Sector-adaptive entry barriers — strength ticks (height of the wall, not good/bad) + a note.
 function BarriersCard({ barriers }: { barriers: NonNullable<Deal['narrative']['barriers']> }) {
   const lvl = { high: 3, medium: 2, low: 1 } as const
@@ -181,20 +190,19 @@ function BarriersCard({ barriers }: { barriers: NonNullable<Deal['narrative']['b
       <SectionTitle hint="height of the wall protecting the position">Entry barriers &amp; moat</SectionTitle>
       <div className="space-y-3.5">
         {barriers.map((b) => (
-          <div key={b.axis} className="flex items-start gap-3">
-            <div className="flex shrink-0 items-end gap-0.5 pt-0.5" title={`${b.rating} barrier`}>
-              {[0, 1, 2].map((i) => (
-                <span key={i} className={cn('w-1 rounded-sm', i < lvl[b.rating] ? 'bg-accent' : 'bg-panel-3', i === 0 ? 'h-2' : i === 1 ? 'h-3' : 'h-4')} />
-              ))}
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-baseline gap-2">
-                <span className="text-sm font-medium text-ink">{b.axis}</span>
-                <span className="text-[10px] tracking-wide text-ink-3 uppercase">{b.rating}</span>
+          <details key={b.axis} className="group">
+            <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
+              <div className="flex shrink-0 items-end gap-0.5" title={`${b.rating} barrier`}>
+                {[0, 1, 2].map((i) => (
+                  <span key={i} className={cn('w-1 rounded-sm', i < lvl[b.rating] ? 'bg-accent' : 'bg-panel-3', i === 0 ? 'h-2' : i === 1 ? 'h-3' : 'h-4')} />
+                ))}
               </div>
-              <p className="mt-0.5 text-sm leading-relaxed text-ink-3">{b.note}</p>
-            </div>
-          </div>
+              <span className="text-sm font-medium text-ink">{b.axis}</span>
+              <span className="text-[10px] tracking-wide text-ink-3 uppercase">{b.rating}</span>
+              <Chevron className="ml-auto" />
+            </summary>
+            <p className="mt-1 pl-6 text-sm leading-relaxed text-ink-3">{b.note}</p>
+          </details>
         ))}
       </div>
     </Card>
@@ -613,12 +621,13 @@ export function MeritTab({ deal, a }: { deal: Deal; a: Analysis }) {
           </div>
           <div className="divide-y divide-line-soft/50">
             {deal.merit.map((m) => (
-              <div key={m.key} className="py-3.5 first:pt-0">
-                <div className="flex items-center gap-2.5">
+              <details key={m.key} className="group py-3.5 first:pt-0">
+                <summary className="flex cursor-pointer list-none items-center gap-2.5 [&::-webkit-details-marker]:hidden">
                   <ScoreChip score={m.score} size="sm" />
                   <span className="text-[15px] font-medium text-ink">{m.label}</span>
                   <Pill tone={confTone[m.confidence]}>{m.confidence} confidence</Pill>
-                </div>
+                  <Chevron className="ml-auto" />
+                </summary>
                 <p className="mt-1.5 text-sm leading-relaxed text-ink-2">{m.rationale}</p>
                 {m.confidenceReason && (
                   <p className="mt-1.5 flex gap-1.5 text-xs leading-relaxed text-ink-3">
@@ -629,7 +638,7 @@ export function MeritTab({ deal, a }: { deal: Deal; a: Analysis }) {
                     </span>
                   </p>
                 )}
-              </div>
+              </details>
             ))}
           </div>
         </Card>
