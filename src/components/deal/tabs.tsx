@@ -1,5 +1,5 @@
 import { Card, ScoreChip, SectionTitle, Stat, TrustTag, Button, Pill } from '@/components/ui'
-import { CapTable, PnLTable, RadarChart, RadarLegend, RangeBar, type RadarDatum } from '@/components/deal/viz'
+import { CapTable, PnLTable, RadarChart, RadarLegend, RangeBar, PeerScatter, ValuationWalk, type RadarDatum } from '@/components/deal/viz'
 import { mult, signedPct, usdm } from '@/lib/format'
 import { cn } from '@/lib/cn'
 import { useApp } from '@/lib/store'
@@ -61,7 +61,7 @@ export function OverviewTab({ deal, a }: { deal: Deal; a: Analysis }) {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
       <div className="lg:col-span-2 space-y-5">
         <Card className="px-6 py-5">
-          <SectionTitle>Company</SectionTitle>
+          <SectionTitle kicker="overview">Company</SectionTitle>
           <p className="text-[15px] leading-relaxed text-ink-2">{n.profile}</p>
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Block title="Market read">{n.marketRead}</Block>
@@ -482,7 +482,7 @@ export function MandateTab({ deal, a }: { deal: Deal; a: Analysis }) {
       {/* right rail — radar + concentration + what it's judged against */}
       <div className="space-y-5">
         <Card className="px-5 py-4">
-          <SectionTitle>Fit summary</SectionTitle>
+          <SectionTitle kicker="mandate fit">Fit summary</SectionTitle>
           <RadarChart data={radar} />
           <RadarLegend
             items={[
@@ -647,7 +647,7 @@ export function MeritTab({ deal, a }: { deal: Deal; a: Analysis }) {
       {/* Right rail — compact radar summary + leadership/ownership + legal */}
       <div className="space-y-5">
         <Card className="px-5 py-4">
-          <SectionTitle>Merit summary</SectionTitle>
+          <SectionTitle kicker="standalone merit">Merit summary</SectionTitle>
           <RadarChart data={radar} />
           <RadarLegend
             items={[
@@ -704,7 +704,7 @@ function Op({ children }: { children: React.ReactNode }) {
   return <span className="px-1 text-ink-3">{children}</span>
 }
 
-export function CompsTab({ deal }: { deal: Deal; a: Analysis }) {
+export function CompsTab({ deal, a }: { deal: Deal; a: Analysis }) {
   const baseRev = deal.assumptions.baseRevenueUSDm
   const netDebt = deal.assumptions.netDebtUSDm
   const m0 = deal.assumptions.ebitdaMarginPct?.[0]
@@ -762,6 +762,20 @@ export function CompsTab({ deal }: { deal: Deal; a: Analysis }) {
           <p className="py-6 text-center text-sm text-ink-3">Select at least one peer below to build a comparables range.</p>
         )}
       </Card>
+
+      {/* 1b — peer landscape bubble */}
+      {(() => {
+        const pts = [
+          ...included.filter((p) => p.revGrowthPct != null && p.evRevenue != null).map((p) => ({ label: p.name, x: p.evRevenue as number, y: p.revGrowthPct as number, size: p.scaleUSDm })),
+          { label: deal.name, x: a.assetValue.impliedEVRevenue, y: deal.assumptions.revGrowthPct?.[0] ?? 0, size: baseRev, target: true },
+        ]
+        return pts.length > 1 ? (
+          <Card className="px-6 py-5">
+            <SectionTitle kicker="comparables" hint="bubble = revenue scale · ◆ = this deal at its implied multiple">Peer landscape — multiple vs growth</SectionTitle>
+            <PeerScatter points={pts} />
+          </Card>
+        ) : null
+      })()}
 
       {/* 2 — the arithmetic, made explicit */}
       {enough && (
@@ -890,7 +904,7 @@ export function ValuationTab({ deal, a }: { deal: Deal; a: Analysis }) {
   return (
     <div className="space-y-5">
       {a.integrity.warnings.length > 0 && (
-        <Card className={cn('px-5 py-4', a.integrity.blocking ? 'border-neg/40 bg-neg-bg/30' : 'border-warn/40 bg-warn-bg/30')}>
+        <Card accent={a.integrity.blocking ? 'neg' : 'warn'} className={cn('px-5 py-4', a.integrity.blocking ? 'bg-neg-bg/30' : 'bg-warn-bg/30')}>
           <div className="flex items-center gap-2 text-sm font-semibold text-ink">
             <span className={cn('h-2 w-2 rounded-full', a.integrity.blocking ? 'bg-neg' : 'bg-warn')} />
             {a.integrity.blocking ? 'Output blocked — a coherence check is failing' : 'Coherence check — review before relying on this'}
@@ -909,7 +923,7 @@ export function ValuationTab({ deal, a }: { deal: Deal; a: Analysis }) {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-5">
           <Card className="px-6 py-5">
-            <SectionTitle hint="strategy-agnostic asset value">Headline valuation</SectionTitle>
+            <SectionTitle kicker="valuation" hint="strategy-agnostic asset value">Headline valuation</SectionTitle>
             <div className="grid grid-cols-3 gap-4">
               <Stat label="DCF (intrinsic)" value={usdm(av.dcfEquityUSDm)} />
               <Stat label="Comps (market)" value={usdm(av.compsEquity.mid)} />
@@ -918,6 +932,21 @@ export function ValuationTab({ deal, a }: { deal: Deal; a: Analysis }) {
             <RangeBar low={av.range.low} mid={av.range.base} high={av.range.high} />
             <p className="text-sm leading-relaxed text-ink-2">{deal.narrative.valuationVerdict}</p>
           </Card>
+
+          {(() => {
+            const rounds = (deal.roundHistory ?? []).filter((r) => r.postMoneyUSDm != null)
+            if (!rounds.length) return null
+            const steps: { label: string; sub?: string; value: number; current?: boolean }[] = [...rounds]
+              .reverse()
+              .map((r) => ({ label: r.series, sub: /\d{4}/.exec(r.date)?.[0], value: r.postMoneyUSDm as number }))
+            steps.push({ label: 'This round', sub: 'ask', value: deal.ask.askValuationUSDm, current: true })
+            return (
+              <Card className="px-6 py-5">
+                <SectionTitle kicker="funding" hint="post-money by round · this round marked">Funding history</SectionTitle>
+                <ValuationWalk steps={steps} />
+              </Card>
+            )
+          })()}
 
           {pm && <OperatingMetricsCard pm={pm} />}
 

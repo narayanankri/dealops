@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '@/lib/store'
-import { Card, ScoreChip, StatusPill, ActionsMenu, Button, Counter } from '@/components/ui'
+import { Card, ScoreChip, StatusPill, ActionsMenu, Button, Counter, SectionTitle } from '@/components/ui'
+import { Funnel, Donut } from '@/components/deal/viz'
 import { usdm } from '@/lib/format'
 import { cn } from '@/lib/cn'
 import { STATUS_FILTER_ORDER, STATUS_LABEL, STATUS_TONE, isActive, statusActions } from '@/lib/status'
@@ -121,6 +122,35 @@ export function Pipeline() {
   const statusCount = (s: DealStatus) => fundDeals.filter((d) => passesExcept(d, 'status') && d.status === s).length
   const capital = shown.filter((d) => isActive(d.status)).reduce((s, d) => s + d.ticketUSDm, 0)
 
+  // ── Analytics-row data (overview charts) ──
+  const toneToVar: Record<string, string> = { pos: 'pos', warn: 'warn', neg: 'neg', accent: 'accent', neutral: 'ink-3' }
+  const statusFunnel = STATUS_FILTER_ORDER.filter((s) => s !== 'archived').map((s) => ({
+    label: STATUS_LABEL[s],
+    value: statusCount(s),
+    color: `var(--color-${toneToVar[STATUS_TONE[s]] ?? 'ink-3'})`,
+  }))
+  const buckets = [
+    { range: '0–39', n: 0, c: 'var(--color-neg)' },
+    { range: '40–59', n: 0, c: 'var(--color-ink-3)' },
+    { range: '60–74', n: 0, c: 'var(--color-warn)' },
+    { range: '75–100', n: 0, c: 'var(--color-pos)' },
+  ]
+  for (const d of fundDeals) {
+    if (d.status === 'archived') continue
+    const s = analysis.get(d.id)!.composite
+    buckets[s < 40 ? 0 : s < 60 ? 1 : s < 75 ? 2 : 3].n++
+  }
+  const bucketMax = Math.max(1, ...buckets.map((b) => b.n))
+  const GEO_COLORS = ['var(--color-accent)', 'var(--color-indigo)', 'var(--color-pos)', 'var(--color-warn)', 'var(--color-accent-2)', 'var(--color-neg)']
+  const geoMix = (() => {
+    const m = new Map<string, number>()
+    for (const d of fundDeals) {
+      if (d.status === 'archived') continue
+      m.set(d.geography, (m.get(d.geography) ?? 0) + 1)
+    }
+    return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([label, value], i) => ({ label, value, color: GEO_COLORS[i % GEO_COLORS.length] }))
+  })()
+
   const toggleStatus = (s: DealStatus) =>
     setStatuses((prev) => {
       const n = new Set(prev)
@@ -164,17 +194,19 @@ export function Pipeline() {
         {STATUS_FILTER_ORDER.map((s) => {
           const selected = statuses.has(s)
           const count = statusCount(s)
+          const toneVar = `var(--color-${toneToVar[STATUS_TONE[s]] ?? 'ink-3'})`
           return (
             <button
               key={s}
               onClick={() => toggleStatus(s)}
               className={cn(
                 'rounded-xl border bg-panel px-4 py-3.5 text-left transition-colors',
-                selected ? 'border-accent/60 bg-accent-bg/40' : 'border-line/70 hover:border-line',
+                selected ? 'border-accent/60 bg-accent-bg/40 ring-1 ring-accent/40' : 'border-line/70 hover:border-line',
               )}
+              style={{ borderLeftColor: toneVar, borderLeftWidth: 2 }}
             >
               <div className="text-[11px] font-medium tracking-wide text-ink-3 uppercase">{STATUS_LABEL[s]}</div>
-              <div className={cn('mt-1 text-2xl font-semibold tnum', count === 0 ? 'text-ink-3/60' : statusCardTone[STATUS_TONE[s]])}>
+              <div className={cn('mt-1 text-3xl font-semibold tracking-tight tnum', count === 0 ? 'text-ink-3/60' : statusCardTone[STATUS_TONE[s]])}>
                 <Counter value={count} dur={700} />
               </div>
             </button>
@@ -182,10 +214,34 @@ export function Pipeline() {
         })}
         <Card className="px-4 py-3.5">
           <div className="text-[11px] font-medium tracking-wide text-ink-3 uppercase">Capital in pipeline</div>
-          <div className="mt-1 text-2xl font-semibold text-ink tnum">
+          <div className="mt-1 text-3xl font-semibold tracking-tight text-ink tnum">
             <Counter value={capital} format={usdm} dur={1000} />
           </div>
           <div className="mt-0.5 text-[11px] text-ink-3">excl. rejected & archived</div>
+        </Card>
+      </div>
+
+      {/* Analytics row */}
+      <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <Card className="px-5 py-4">
+          <SectionTitle kicker="pipeline">Deals by status</SectionTitle>
+          <Funnel data={statusFunnel} />
+        </Card>
+        <Card className="px-5 py-4">
+          <SectionTitle kicker="composite score">Distribution</SectionTitle>
+          <div className="flex h-[136px] items-end gap-3 pt-2">
+            {buckets.map((b) => (
+              <div key={b.range} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
+                <span className="text-sm font-semibold tnum" style={{ color: b.c }}>{b.n}</span>
+                <div className="w-2/3 rounded-t-sm transition-[height] duration-500" style={{ height: `${(b.n / bucketMax) * 88}px`, minHeight: 2, background: b.c }} />
+                <span className="font-mono text-[10px] text-ink-3">{b.range}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+        <Card className="px-5 py-4">
+          <SectionTitle kicker="by country">Geography mix</SectionTitle>
+          <Donut data={geoMix} />
         </Card>
       </div>
 

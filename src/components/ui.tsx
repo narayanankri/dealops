@@ -36,24 +36,36 @@ const toneDot: Record<Tone, string> = {
 }
 
 // ── Card / Panel ──
-export function Card({ className, children }: { className?: string; children: ReactNode }) {
+export function Card({ className, children, accent }: { className?: string; children: ReactNode; accent?: 'accent' | 'indigo' | 'warn' | 'neg' | 'pos' }) {
+  const c = accent ? `var(--color-${accent})` : undefined
   return (
     <div
       className={cn(
         'rounded-xl border border-line/70 bg-panel shadow-[0_1px_0_0_rgba(255,255,255,0.02),0_8px_24px_-12px_rgba(0,0,0,0.6)]',
+        accent && 'relative overflow-hidden',
         className,
       )}
+      style={c ? { borderLeftColor: c, borderLeftWidth: 2 } : undefined}
     >
-      {children}
+      {accent && (
+        <div
+          className="pointer-events-none absolute top-0 right-0 h-24 w-24"
+          style={{ background: `radial-gradient(circle at top right, color-mix(in srgb, ${c} 16%, transparent), transparent 70%)` }}
+        />
+      )}
+      {accent ? <div className="relative">{children}</div> : children}
     </div>
   )
 }
 
-export function SectionTitle({ children, hint }: { children: ReactNode; hint?: string }) {
+export function SectionTitle({ children, hint, kicker }: { children: ReactNode; hint?: string; kicker?: string }) {
   return (
-    <div className="mb-3 flex items-baseline justify-between">
-      <h3 className="text-[13px] font-semibold tracking-wide text-ink-2 uppercase">{children}</h3>
-      {hint && <span className="text-xs text-ink-3">{hint}</span>}
+    <div className="mb-3">
+      {kicker && <div className="mb-1 font-mono text-[10px] tracking-[0.14em] text-accent-2 uppercase">{kicker}</div>}
+      <div className="flex items-baseline justify-between">
+        <h3 className="text-[13px] font-semibold tracking-wide text-ink-2 uppercase">{children}</h3>
+        {hint && <span className="text-xs text-ink-3">{hint}</span>}
+      </div>
     </div>
   )
 }

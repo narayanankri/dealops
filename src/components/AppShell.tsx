@@ -117,6 +117,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </div>
 
+          <div className="mt-3 flex items-start gap-2 px-1 text-[11px] leading-snug text-ink-3">
+            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-pos pulsing" />
+            <span>Connected · Claude for Financial Services</span>
+          </div>
+
           <button
             onClick={() => {
               try {
@@ -126,7 +131,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               }
               window.location.reload()
             }}
-            className="mt-3 w-full rounded-lg px-3 py-2 text-left text-xs text-ink-3 transition-colors hover:bg-panel-2 hover:text-ink-2"
+            className="mt-2 w-full rounded-lg px-3 py-2 text-left text-xs text-ink-3 transition-colors hover:bg-panel-2 hover:text-ink-2"
           >
             ← Sign out
           </button>

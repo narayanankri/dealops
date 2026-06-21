@@ -247,3 +247,117 @@ export function PnLTable({ financials }: { financials?: { years: (string | numbe
     </table>
   )
 }
+
+// ── Horizontal funnel / bar set (e.g. deals by status) ──
+export function Funnel({ data }: { data: { label: string; value: number; color: string }[] }) {
+  const max = Math.max(1, ...data.map((d) => d.value))
+  return (
+    <div className="space-y-2.5">
+      {data.map((d) => (
+        <div key={d.label} className="flex items-center gap-3">
+          <span className="w-24 shrink-0 truncate text-right text-xs text-ink-3">{d.label}</span>
+          <div className="h-3.5 flex-1 overflow-hidden rounded-sm bg-panel-3">
+            <div className="h-full rounded-sm transition-[width] duration-500" style={{ width: `${(d.value / max) * 100}%`, background: d.color }} />
+          </div>
+          <span className="w-5 shrink-0 text-right text-xs font-semibold tnum" style={{ color: d.color }}>{d.value}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Donut + legend (mix) ──
+export function Donut({ data, size = 132 }: { data: { label: string; value: number; color: string }[]; size?: number }) {
+  const total = data.reduce((s, d) => s + d.value, 0) || 1
+  const stroke = 15
+  const r = size / 2 - stroke / 2 - 1
+  const cx = size / 2
+  const C = 2 * Math.PI * r
+  let acc = 0
+  return (
+    <div className="flex items-center gap-4">
+      <svg width={size} height={size} className="shrink-0">
+        <g transform={`rotate(-90 ${cx} ${cx})`}>
+          {data.map((d) => {
+            const len = (d.value / total) * C
+            const seg = <circle key={d.label} cx={cx} cy={cx} r={r} fill="none" stroke={d.color} strokeWidth={stroke} strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-acc} />
+            acc += len
+            return seg
+          })}
+        </g>
+        <text x={cx} y={cx} textAnchor="middle" dominantBaseline="central" className="fill-ink font-display" style={{ fontSize: size * 0.26, fontWeight: 600 }}>{total}</text>
+      </svg>
+      <div className="flex flex-col gap-1.5">
+        {data.map((d) => (
+          <div key={d.label} className="flex items-center gap-2 text-[11px]">
+            <span className="h-2 w-2 shrink-0 rounded-sm" style={{ background: d.color }} />
+            <span className="text-ink-2">{d.label}</span>
+            <span className="text-ink-3 tnum">{d.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Peer-bubble scatter: x = EV/Revenue, y = growth %, bubble = scale; ★ marks the deal ──
+export type ScatterPoint = { label: string; x: number; y: number; size?: number; target?: boolean }
+export function PeerScatter({ points, xLabel = 'EV / Revenue', yLabel = 'Growth %', height = 280 }: { points: ScatterPoint[]; xLabel?: string; yLabel?: string; height?: number }) {
+  const W = 460
+  const padL = 44, padR = 18, padT = 18, padB = 34
+  const xMax = Math.max(1, ...points.map((p) => p.x)) * 1.12
+  const yMax = Math.max(1, ...points.map((p) => p.y)) * 1.12
+  const sx = (x: number) => padL + (x / xMax) * (W - padL - padR)
+  const sy = (y: number) => height - padB - (y / yMax) * (height - padT - padB)
+  const sMax = Math.max(1, ...points.map((p) => p.size ?? 1))
+  const rOf = (s?: number) => 5 + Math.sqrt((s ?? 1) / sMax) * 14
+  const ticks = [0, 0.25, 0.5, 0.75, 1]
+  return (
+    <svg viewBox={`0 0 ${W} ${height}`} className="w-full">
+      {ticks.map((t) => {
+        const gx = padL + t * (W - padL - padR), gy = height - padB - t * (height - padT - padB)
+        return (
+          <g key={t}>
+            <line x1={padL} y1={gy} x2={W - padR} y2={gy} stroke="var(--color-line)" strokeWidth={0.6} opacity={0.6} />
+            <text x={padL - 6} y={gy} textAnchor="end" dominantBaseline="central" className="fill-ink-3" style={{ fontSize: 9, fontFamily: 'var(--font-mono)' }}>{Math.round(t * yMax)}</text>
+            <text x={gx} y={height - padB + 14} textAnchor="middle" className="fill-ink-3" style={{ fontSize: 9, fontFamily: 'var(--font-mono)' }}>{(t * xMax).toFixed(1)}x</text>
+          </g>
+        )
+      })}
+      <text x={W / 2} y={height - 3} textAnchor="middle" className="fill-ink-3 uppercase" style={{ fontSize: 9, letterSpacing: 1, fontFamily: 'var(--font-mono)' }}>{xLabel}</text>
+      <text x={11} y={height / 2} textAnchor="middle" className="fill-ink-3 uppercase" style={{ fontSize: 9, letterSpacing: 1, fontFamily: 'var(--font-mono)' }} transform={`rotate(-90 11 ${height / 2})`}>{yLabel}</text>
+      {points.map((p, i) => {
+        const x = sx(p.x), y = sy(p.y), rr = rOf(p.size)
+        const col = p.target ? 'var(--color-neg)' : i % 2 === 0 ? 'var(--color-accent)' : 'var(--color-indigo)'
+        return (
+          <g key={p.label}>
+            <circle cx={x} cy={y} r={rr} fill={col} fillOpacity={0.18} stroke={col} strokeWidth={p.target ? 2 : 1.2} />
+            <text x={x} y={y - rr - 4} textAnchor="middle" className={p.target ? 'fill-neg' : 'fill-ink-2'} style={{ fontSize: p.target ? 10 : 9, fontWeight: p.target ? 600 : 500 }}>{p.label}</text>
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+// ── Valuation walk: post-money by round, current highlighted ──
+export function ValuationWalk({ steps }: { steps: { label: string; sub?: string; value: number; current?: boolean }[] }) {
+  const max = Math.max(1, ...steps.map((s) => s.value))
+  return (
+    <div className="flex h-[200px] items-end gap-3 px-1 pt-2">
+      {steps.map((s, i) => (
+        <div key={i} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
+          <span className={cn('text-[10.5px] font-semibold whitespace-nowrap tnum', s.current ? 'text-accent-2' : 'text-indigo')}>{usdm(s.value)}</span>
+          <div
+            className={cn('w-full max-w-[54px] rounded-t-sm transition-[height] duration-500', s.current ? 'bg-accent' : 'bg-indigo/60')}
+            style={{ height: `${(s.value / max) * 130}px`, minHeight: 3 }}
+          />
+          <div className="text-center">
+            <div className={cn('text-[10.5px]', s.current ? 'font-semibold text-ink' : 'text-ink-2')}>{s.label}</div>
+            {s.sub && <div className="text-[9.5px] text-ink-3 tnum">{s.sub}</div>}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}

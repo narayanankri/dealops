@@ -161,7 +161,7 @@ function Metric({ label, score }: { label: string; score: number }) {
     <div className="flex flex-col items-center text-center">
       <div className="text-[11px] font-medium tracking-wide text-ink-3 uppercase">{label}</div>
       <div className="mt-2">
-        <ConfidenceRing score={score} size={52} />
+        <ConfidenceRing score={score} size={64} />
       </div>
     </div>
   )
@@ -169,7 +169,7 @@ function Metric({ label, score }: { label: string; score: number }) {
 
 function RecommendationStrip({ a }: { a: Analysis }) {
   return (
-    <Card className="mt-4 px-6 py-4">
+    <Card accent={a.verdict === 'proceed' ? 'pos' : a.verdict === 'review' ? 'warn' : 'indigo'} className="mt-4 px-6 py-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-start">
         <div className="md:w-1/2">
           <div className="mb-1.5 text-[11px] font-medium tracking-wide text-ink-3 uppercase">Key considerations</div>
