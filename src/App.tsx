@@ -70,6 +70,15 @@ export default function App() {
     }
     setAuthed(false)
   }
+  const toChooser = () => {
+    try {
+      localStorage.removeItem(VER_KEY)
+    } catch {
+      /* ignore */
+    }
+    setVersion(null)
+    navigate('/')
+  }
 
   // Keep the URL consistent with the chosen version.
   useEffect(() => {
@@ -79,7 +88,7 @@ export default function App() {
 
   if (version === null) return <Chooser onPick={choose} />
 
-  const toggle = authed ? <VersionToggle version={version} onClick={switchVersion} /> : null
+  const toggle = authed ? <VersionToggle version={version} onClick={switchVersion} onChooser={toChooser} /> : null
 
   // ── Version A — facelift ──
   if (version === 'a') {
@@ -148,22 +157,25 @@ export default function App() {
   )
 }
 
-function VersionToggle({ version, onClick }: { version: Version; onClick: () => void }) {
+function VersionToggle({ version, onClick, onChooser }: { version: Version; onClick: () => void; onChooser: () => void }) {
   const toA = version === 'b'
+  const accent = toA ? '#19c2db' : '#00A3E0'
+  const bg = toA ? '#12151f' : '#0F2040'
+  const border = toA ? '#2a3550' : '#2A4480'
+  const base = {
+    fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontSize: 11, letterSpacing: 0.5, fontWeight: 700,
+    cursor: 'pointer', color: accent, background: bg, border: `1px solid ${border}`, padding: '8px 13px',
+    boxShadow: '0 6px 24px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: 7,
+  } as const
   return (
-    <button
-      onClick={onClick}
-      title={toA ? 'Switch to Version A (KPMG facelift)' : 'Switch to Version B (Instrument)'}
-      style={{
-        position: 'fixed', right: 16, bottom: 16, zIndex: 9000, padding: '8px 14px',
-        background: toA ? '#12151f' : '#0F2040', border: `1px solid ${toA ? '#2a3550' : '#2A4480'}`,
-        borderRadius: 999, color: toA ? '#19c2db' : '#00A3E0', fontSize: 11,
-        fontFamily: "'JetBrains Mono', ui-monospace, monospace", letterSpacing: 0.5, fontWeight: 700,
-        cursor: 'pointer', boxShadow: '0 6px 24px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: 7,
-      }}
-    >
-      <span style={{ width: 7, height: 7, borderRadius: 4, background: toA ? '#19c2db' : '#00A3E0', boxShadow: `0 0 8px ${toA ? '#19c2db' : '#00A3E0'}` }} />
-      {toA ? 'B → A' : 'A → B'}
-    </button>
+    <div style={{ position: 'fixed', right: 16, bottom: 16, zIndex: 9000, display: 'flex', gap: 8 }}>
+      <button onClick={onChooser} title="Back to the version chooser" style={{ ...base, borderRadius: 999 }}>
+        ⊞ Chooser
+      </button>
+      <button onClick={onClick} title={toA ? 'Switch to Version A (KPMG facelift)' : 'Switch to Version B (Instrument)'} style={{ ...base, borderRadius: 999 }}>
+        <span style={{ width: 7, height: 7, borderRadius: 4, background: accent, boxShadow: `0 0 8px ${accent}` }} />
+        {toA ? 'B → A' : 'A → B'}
+      </button>
+    </div>
   )
 }
