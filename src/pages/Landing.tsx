@@ -118,7 +118,7 @@ function MetricChip({ label, children, className, delay = 0 }: { label: string; 
 // ── The living "knowledge graph" — a cosmic web of deals ──
 // Glowing labelled hubs (companies, sectors, metrics) drift through a starfield,
 // wired to their neighbours by filaments, with signal pulses firing along the edges.
-// Hand-rolled on canvas for 60fps; honours prefers-reduced-motion (renders one static frame).
+// Hand-rolled on canvas for 60fps; always animates (motion is intentional in this demo).
 const GRAPH_LABELS = [
   'Tabby', 'Tamara', 'SpaceX', 'Starlink', 'Talabat', 'Property Finder', 'Khazna',
   'Ramp', 'Plaid', 'Lulu', 'Americana', 'Vision 2030', 'Open Banking', 'BNPL',
@@ -158,7 +158,7 @@ function KnowledgeGraph() {
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const reduce = false // always animate (motion is intentional in this demo)
     const dpr = Math.min(2, window.devicePixelRatio || 1)
     let w = 0
     let h = 0

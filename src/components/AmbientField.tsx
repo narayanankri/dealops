@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 
 // A deliberately faint version of the landing's knowledge graph, drifting behind the whole
 // workspace so the product reads as one living system. Low node count, very low alpha, no
-// labels — atmosphere, not focus. Honours prefers-reduced-motion (renders a static frame).
+// labels — atmosphere, not focus. Always animates (motion is intentional in this demo).
 export function AmbientField() {
   const ref = useRef<HTMLCanvasElement | null>(null)
   useEffect(() => {
@@ -10,7 +10,7 @@ export function AmbientField() {
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const reduce = false // always animate (motion is intentional in this demo)
     const dpr = Math.min(2, window.devicePixelRatio || 1)
     let w = 0
     let h = 0

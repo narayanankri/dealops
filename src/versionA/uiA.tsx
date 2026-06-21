@@ -182,9 +182,7 @@ export function Btn({
 export function CountUp({ value, duration = 1200, prefix = '', suffix = '', decimals = 0 }: { value: number; duration?: number; prefix?: string; suffix?: string; decimals?: number }) {
   const [n, setN] = useState(0)
   useEffect(() => {
-    const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     const to = Number.isFinite(value) ? value : 0
-    if (reduce) { setN(to); return }
     const start = performance.now()
     let raf = 0
     const tick = (now: number) => {
@@ -302,8 +300,6 @@ export function RingGaugeA({ label, score, size = 88, stroke = 7 }: { label: str
   const frac = Math.max(0, Math.min(100, score)) / 100
   const [shown, setShown] = useState(false)
   useEffect(() => {
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    if (reduce) { setShown(true); return }
     const id = setTimeout(() => setShown(true), 30)
     return () => clearTimeout(id)
   }, [])
