@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { T, FONT } from './theme'
-import { Mono, Btn, NetworkBackground, CountUp } from './uiA'
+import { Mono, Btn, CountUp } from './uiA'
+import { KnowledgeGraphA } from './KnowledgeGraphA'
 
 // Version A gate — a KPMG-style split landing. The login is decorative (the demo
 // has no real auth): any "Enter" calls onEnter, matching Version B's gate behaviour.
@@ -14,11 +15,11 @@ export function LandingA({ onEnter }: { onEnter: () => void }) {
     <div style={{ minHeight: '100vh', display: 'grid', gridTemplateColumns: 'minmax(0,1.15fr) minmax(360px,0.85fr)', background: T.bg, color: T.text, fontFamily: FONT.sans }}>
       {/* Hero */}
       <div style={{ position: 'relative', overflow: 'hidden', background: T.heroGrad, padding: '56px 56px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        <NetworkBackground density={60} opacity={0.5} />
-        <div style={{ position: 'relative' }}>
+        <KnowledgeGraphA />
+        <div style={{ position: 'relative', pointerEvents: 'none' }}>
           <Mono color={T.cyan} style={{ letterSpacing: 5 }}>◆ AI Deal Operations · Version A</Mono>
         </div>
-        <div style={{ position: 'relative', maxWidth: 620 }}>
+        <div style={{ position: 'relative', maxWidth: 620, pointerEvents: 'none' }}>
           <h1 style={{ fontFamily: FONT.serif, fontSize: 60, fontWeight: 700, lineHeight: 1.02, letterSpacing: -2, color: T.text, margin: '0 0 20px' }}>
             Deal screening,<br />
             <span style={{ color: T.cyan }}>calibrated.</span>
@@ -41,7 +42,7 @@ export function LandingA({ onEnter }: { onEnter: () => void }) {
             ))}
           </div>
         </div>
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: T.muted, fontFamily: FONT.mono }}>
+        <div style={{ position: 'relative', pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: T.muted, fontFamily: FONT.mono }}>
           <span style={{ width: 6, height: 6, borderRadius: 3, background: T.green, boxShadow: `0 0 8px ${T.green}` }} />
           Connected · Claude for Financial Services
         </div>
