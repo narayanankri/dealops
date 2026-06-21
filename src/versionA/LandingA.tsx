@@ -6,10 +6,8 @@ import { KnowledgeGraphA } from './KnowledgeGraphA'
 // Version A gate — a KPMG-style split landing. The login is decorative (the demo
 // has no real auth): any "Enter" calls onEnter, matching Version B's gate behaviour.
 export function LandingA({ onEnter }: { onEnter: () => void }) {
-  const [step, setStep] = useState<1 | 2>(1)
-  const [email, setEmail] = useState('analyst@kpmg.com')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [code, setCode] = useState('')
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
@@ -68,61 +66,20 @@ export function LandingA({ onEnter }: { onEnter: () => void }) {
       {/* Sign-in card */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, borderLeft: `1px solid ${T.border}`, background: T.ink }}>
         <div style={{ width: '100%', maxWidth: 340 }}>
-          <Mono color={T.cyan} style={{ marginBottom: 10 }}>{step === 1 ? 'Secure sign-in' : 'Verification'}</Mono>
-          <div style={{ fontFamily: FONT.serif, fontSize: 28, fontWeight: 700, letterSpacing: -0.5, marginBottom: 24 }}>
-            {step === 1 ? 'Enter the workspace' : 'Check your authenticator'}
-          </div>
+          <Mono color={T.cyan} style={{ marginBottom: 10 }}>Secure sign-in</Mono>
+          <div style={{ fontFamily: FONT.serif, fontSize: 28, fontWeight: 700, letterSpacing: -0.5, marginBottom: 24 }}>Enter the workspace</div>
 
-          {step === 1 ? (
-            <>
-              <Field label="Work email" value={email} onChange={setEmail} type="email" />
-              <Field label="Password" value={password} onChange={setPassword} type="password" placeholder="••••••••" />
-              <Btn variant="glow" size="lg" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={() => setStep(2)}>
-                Continue →
-              </Btn>
-            </>
-          ) : (
-            <>
-              <Mono style={{ marginBottom: 9 }}>6-digit code</Mono>
-              <OtpBoxes value={code} onChange={setCode} />
-              <Btn variant="glow" size="lg" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={onEnter}>
-                Enter →
-              </Btn>
-              <button onClick={() => setStep(1)} style={{ marginTop: 14, background: 'none', border: 'none', color: T.muted, fontSize: 12, cursor: 'pointer', fontFamily: FONT.sans }}>← Back</button>
-            </>
-          )}
+          <form onSubmit={(e) => { e.preventDefault(); onEnter() }}>
+            <Field label="Username" value={username} onChange={setUsername} type="text" placeholder="username" />
+            <Field label="Password" value={password} onChange={setPassword} type="password" placeholder="••••••••" />
+            <Btn variant="glow" size="lg" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={onEnter}>
+              Enter the workspace →
+            </Btn>
+          </form>
 
-          <div style={{ marginTop: 22, paddingTop: 18, borderTop: `1px solid ${T.border}`, fontSize: 11, color: T.muted, lineHeight: 1.6 }}>
-            Demo workspace — credentials are not checked. <button onClick={onEnter} style={{ background: 'none', border: 'none', color: T.cyan, cursor: 'pointer', fontSize: 11, fontFamily: FONT.sans, padding: 0 }}>Skip sign-in →</button>
-          </div>
+          <p style={{ marginTop: 16, textAlign: 'center', fontFamily: FONT.mono, fontSize: 10, color: T.muted }}>Demo — any credentials work.</p>
         </div>
       </div>
-    </div>
-  )
-}
-
-function OtpBoxes({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const chars = Array.from({ length: 6 }, (_, i) => value[i] ?? '')
-  return (
-    <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-      {chars.map((ch, i) => (
-        <input
-          key={i}
-          value={ch}
-          maxLength={1}
-          inputMode="numeric"
-          onChange={(e) => {
-            const v = e.target.value.replace(/\D/g, '').slice(0, 1)
-            const arr = Array.from({ length: 6 }, (_, k) => value[k] ?? '')
-            arr[i] = v
-            onChange(arr.join('').slice(0, 6))
-            if (v) (e.target.nextElementSibling as HTMLElement | null)?.focus()
-          }}
-          style={{ width: 44, height: 52, textAlign: 'center', background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, color: T.text, fontFamily: FONT.mono, fontSize: 20, fontWeight: 600, outline: 'none' }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = T.cyan }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = T.border }}
-        />
-      ))}
     </div>
   )
 }

@@ -408,10 +408,10 @@ function LoginCard({ onEnter, className }: { onEnter: () => void; className?: st
         <GaugeMark size={20} />
         <span className="font-display text-sm font-semibold text-ink">Sign in to the workspace</span>
       </div>
-      <label className="mb-1 block font-mono text-[10px] tracking-wide text-ink-3 uppercase">Email</label>
+      <label className="mb-1 block font-mono text-[10px] tracking-wide text-ink-3 uppercase">Username</label>
       <input
-        type="email"
-        placeholder="analyst@fund.com"
+        type="text"
+        placeholder="username"
         className="mb-3 w-full rounded-lg border border-line bg-panel-2/70 px-3 py-2.5 text-sm text-ink placeholder:text-ink-3/60 outline-none focus:border-accent/60 focus:ring-2 focus:ring-accent/20"
       />
       <label className="mb-1 block font-mono text-[10px] tracking-wide text-ink-3 uppercase">Password</label>
@@ -426,13 +426,6 @@ function LoginCard({ onEnter, className }: { onEnter: () => void; className?: st
         disabled={entering}
       >
         {entering ? 'Calibrating…' : 'Enter the workspace →'}
-      </button>
-      <button
-        type="button"
-        onClick={() => { setEntering(true); window.setTimeout(onEnter, 600) }}
-        className="mt-2.5 w-full rounded-lg border border-line bg-transparent px-4 py-2.5 text-sm font-medium text-ink-2 transition-colors hover:border-line/80 hover:text-ink"
-      >
-        Continue with SSO
       </button>
       <p className="mt-3 text-center font-mono text-[10px] text-ink-3">Demo — any credentials work.</p>
     </form>

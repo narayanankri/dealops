@@ -15,10 +15,7 @@ export function Chooser({ onPick }: { onPick: (v: 'a' | 'b') => void }) {
         <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: 5, textTransform: 'uppercase', color: '#19c2db', marginBottom: 14 }}>
           AI Deal Operations
         </div>
-        <h1 style={{ fontSize: 34, fontWeight: 600, letterSpacing: -0.8, margin: '0 0 10px', color: '#fff' }}>Choose your experience</h1>
-        <p style={{ fontSize: 15, lineHeight: 1.6, color: '#9aa3b2', margin: 0 }}>
-          Same engine, same deals, same analysis — two interfaces. Pick a look; you can switch anytime from the corner toggle.
-        </p>
+        <h1 style={{ fontSize: 34, fontWeight: 600, letterSpacing: -0.8, margin: 0, color: '#fff' }}>Choose your experience</h1>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 22, width: '100%', maxWidth: 760 }}>
@@ -33,8 +30,7 @@ export function Chooser({ onPick }: { onPick: (v: 'a' | 'b') => void }) {
             </div>
           </div>
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: 2, color: '#00A3E0', marginBottom: 8 }}>VERSION A</div>
-          <div style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 8, letterSpacing: -0.4 }}>KPMG Editorial</div>
-          <div style={{ fontSize: 13, color: '#9aa3b2', lineHeight: 1.55 }}>Deep-navy, serif-led facelift. Warm, corporate, magazine-grade.</div>
+          <div style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: -0.4 }}>KPMG Editorial</div>
         </button>
 
         {/* Version B */}
@@ -46,8 +42,7 @@ export function Chooser({ onPick }: { onPick: (v: 'a' | 'b') => void }) {
             <div style={{ position: 'absolute', right: 14, bottom: 14, width: 40, height: 40, borderRadius: 20, border: '2px solid #19c2db', borderTopColor: 'transparent', transform: 'rotate(45deg)' }} />
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: 2, color: '#19c2db', marginBottom: 8 }}>VERSION B</div>
-          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 8, letterSpacing: -0.4 }}>The Instrument</div>
-          <div style={{ fontSize: 13, color: '#9aa3b2', lineHeight: 1.55 }}>Our current build — electric cyan on near-black, technical and precise.</div>
+          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: -0.4 }}>The Instrument</div>
         </button>
       </div>
     </div>

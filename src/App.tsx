@@ -71,12 +71,16 @@ export default function App() {
     setAuthed(false)
   }
   const toChooser = () => {
+    // Full restart: clear the chosen version AND sign out, so the flow begins
+    // again at the chooser → login → app.
     try {
       localStorage.removeItem(VER_KEY)
+      localStorage.removeItem(AUTH_KEY)
     } catch {
       /* ignore */
     }
     setVersion(null)
+    setAuthed(false)
     navigate('/')
   }
 

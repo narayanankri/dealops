@@ -2,8 +2,7 @@ import { useEffect, useRef } from 'react'
 
 // A live, force-directed knowledge graph for the Version A hero — drift, cursor
 // force-field, hover highlight, drag, travelling pulses that chain across edges,
-// and idle auto-attract bursts. Pure canvas. Respects prefers-reduced-motion
-// (settles once, no animation loop).
+// and idle auto-attract bursts. Pure canvas. Always animates (decorative hero).
 type RawNode = { id: string; label: string; isHub?: boolean }
 const NODES: RawNode[] = [
   { id: 'intelligence', label: 'Intelligence', isHub: true },
@@ -52,7 +51,6 @@ export function KnowledgeGraphA() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     const dpr = window.devicePixelRatio || 1
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
     const nodes: Node[] = NODES.map((n) => ({ ...n, x: 0, y: 0, vx: 0, vy: 0 }))
     const idMap: Record<string, number> = Object.fromEntries(nodes.map((n, i) => [n.id, i]))
@@ -88,12 +86,10 @@ export function KnowledgeGraphA() {
     const onLeave = () => { mouse.x = -1e4; mouse.y = -1e4 }
     const onDown = () => { if (hover !== null) drag = hover }
     const onUp = () => { drag = null }
-    if (!reduce) {
-      canvas.addEventListener('mousemove', onMove)
-      canvas.addEventListener('mouseleave', onLeave)
-      canvas.addEventListener('mousedown', onDown)
-      window.addEventListener('mouseup', onUp)
-    }
+    canvas.addEventListener('mousemove', onMove)
+    canvas.addEventListener('mouseleave', onLeave)
+    canvas.addEventListener('mousedown', onDown)
+    window.addEventListener('mouseup', onUp)
 
     const MAX_PULSES = 60
     const spawn = (s: number, t: number, gen = 0) => { if (pulses.length < MAX_PULSES) pulses.push({ s, t, t0: performance.now(), gen }) }
@@ -121,7 +117,7 @@ export function KnowledgeGraphA() {
         fx[e.s] += (dx / d) * f; fy[e.s] += (dy / d) * f; fx[e.t] -= (dx / d) * f; fy[e.t] -= (dy / d) * f
       }
       for (let i = 0; i < N; i++) { fx[i] += (cx - nodes[i].x) * 0.0035; fy[i] += (cy - nodes[i].y) * 0.0035 }
-      if (!reduce) for (let i = 0; i < N; i++) { fx[i] += (Math.random() - 0.5) * 6; fy[i] += (Math.random() - 0.5) * 6 }
+      for (let i = 0; i < N; i++) { fx[i] += (Math.random() - 0.5) * 6; fy[i] += (Math.random() - 0.5) * 6 }
       if (mouse.x > -1000) {
         const R = 170
         for (let i = 0; i < N; i++) { const dx = nodes[i].x - mouse.x, dy = nodes[i].y - mouse.y, d = Math.sqrt(dx * dx + dy * dy) + 0.01; if (d < R) { const s = (1 - d / R) * 90; fx[i] += (dx / d) * s; fy[i] += (dy / d) * s } }
@@ -199,14 +195,9 @@ export function KnowledgeGraphA() {
     }
     let lastPulse = performance.now(), lastBurst = performance.now()
     let raf = 0
-    if (reduce) {
-      for (let k = 0; k < 240; k++) step(false)
-      step(true)
-    } else {
-      for (let k = 0; k < 90; k++) step(false) // pre-settle so the first paint looks good even before rAF resumes
-      const loop = () => { step(true); raf = requestAnimationFrame(loop) }
-      loop()
-    }
+    for (let k = 0; k < 90; k++) step(false) // pre-settle so the first paint looks good
+    const loop = () => { step(true); raf = requestAnimationFrame(loop) }
+    loop() // always animate — this is the decorative hero, motion is the point
     return () => {
       cancelAnimationFrame(raf)
       window.removeEventListener('resize', resize)
