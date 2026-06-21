@@ -135,8 +135,10 @@ export function Pipeline() {
     { range: '60–74', n: 0, c: 'var(--color-warn)' },
     { range: '75–100', n: 0, c: 'var(--color-pos)' },
   ]
+  // Charts share the funnel's basis: every active filter EXCEPT the status tiles
+  // (so they react to facets / flags / search just like "deals by status" does).
   for (const d of fundDeals) {
-    if (d.status === 'archived') continue
+    if (d.status === 'archived' || !passesExcept(d, 'status')) continue
     const s = analysis.get(d.id)!.composite
     buckets[s < 40 ? 0 : s < 60 ? 1 : s < 75 ? 2 : 3].n++
   }
@@ -145,7 +147,7 @@ export function Pipeline() {
   const geoMix = (() => {
     const m = new Map<string, number>()
     for (const d of fundDeals) {
-      if (d.status === 'archived') continue
+      if (d.status === 'archived' || !passesExcept(d, 'status')) continue
       m.set(d.geography, (m.get(d.geography) ?? 0) + 1)
     }
     return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([label, value], i) => ({ label, value, color: GEO_COLORS[i % GEO_COLORS.length] }))
