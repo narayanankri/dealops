@@ -427,7 +427,6 @@ function LoginCard({ onEnter, className }: { onEnter: () => void; className?: st
       >
         {entering ? 'Calibrating…' : 'Enter the workspace →'}
       </button>
-      <p className="mt-3 text-center font-mono text-[10px] text-ink-3">Demo — any credentials work.</p>
     </form>
   )
 }

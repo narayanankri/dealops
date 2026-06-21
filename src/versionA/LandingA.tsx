@@ -76,8 +76,6 @@ export function LandingA({ onEnter }: { onEnter: () => void }) {
               Enter the workspace →
             </Btn>
           </form>
-
-          <p style={{ marginTop: 16, textAlign: 'center', fontFamily: FONT.mono, fontSize: 10, color: T.muted }}>Demo — any credentials work.</p>
         </div>
       </div>
     </div>
