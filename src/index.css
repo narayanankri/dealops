@@ -6,12 +6,12 @@
    ─────────────────────────────────────────────────────────── */
 @theme {
   /* surfaces — near-black canvas with layered elevations, faint blue-black undertone */
-  --color-canvas: #090a11;
-  --color-panel: #12151f;
-  --color-panel-2: #181c29;
-  --color-panel-3: #1f2433;
-  --color-line: #242a3a;
-  --color-line-soft: #1b202d;
+  --color-canvas: #071019;
+  --color-panel: #0e1d2c;
+  --color-panel-2: #142836;
+  --color-panel-3: #1a3243;
+  --color-line: #21404f;
+  --color-line-soft: #1a3140;
 
   /* ink */
   --color-ink: #e9ebef;
