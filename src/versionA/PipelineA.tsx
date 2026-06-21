@@ -6,7 +6,7 @@ import { STATUS_FILTER_ORDER, STATUS_LABEL, isActive } from '@/lib/status'
 import type { Analysis, Deal, DealStatus } from '@/types'
 import { TopBarA } from './TopBarA'
 import { T, FONT, STATUS_A, alpha, scoreColor } from './theme'
-import { Card, KPI, Mono, ScoreBadge, StatusPill, Btn } from './uiA'
+import { Card, KPI, Mono, ScoreBadge, StatusPill, Btn, CountUp, FunnelA, DonutA } from './uiA'
 
 type SortKey = 'composite' | 'mandate' | 'merit' | 'ticket' | 'name'
 
@@ -78,6 +78,14 @@ export function PipelineA() {
   for (const d of fundDeals) { if (d.status === 'archived') continue; const s = A.get(d.id)!.composite; buckets[s < 40 ? 0 : s < 60 ? 1 : s < 75 ? 2 : 3].n++ }
   const bucketMax = Math.max(1, ...buckets.map((b) => b.n))
 
+  // geography mix (by country)
+  const GEO_COLORS = [T.cyan, T.purpleSoft, T.green, T.amber, T.blue, T.magenta]
+  const geoMix = (() => {
+    const m = new Map<string, number>()
+    for (const d of fundDeals) { if (d.status === 'archived') continue; m.set(d.geography, (m.get(d.geography) ?? 0) + 1) }
+    return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([label, value], i) => ({ label, value, color: GEO_COLORS[i % GEO_COLORS.length] }))
+  })()
+
   return (
     <>
       <TopBarA
@@ -88,33 +96,41 @@ export function PipelineA() {
       />
       <div style={{ padding: '24px 32px', maxWidth: 1240, margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 22 }}>
-          {STATUS_FILTER_ORDER.map((s) => (
-            <KPI key={s} label={STATUS_LABEL[s]} value={statusCount(s)} accent={STATUS_A[s].color} selected={statuses.has(s)} onClick={() => toggle(statuses, s, setStatuses)} />
+          {STATUS_FILTER_ORDER.map((s, i) => (
+            <div key={s} className="fade-up" style={{ animationDelay: `${i * 45}ms` }}>
+              <KPI label={STATUS_LABEL[s]} value={<CountUp value={statusCount(s)} />} accent={STATUS_A[s].color} selected={statuses.has(s)} onClick={() => toggle(statuses, s, setStatuses)} />
+            </div>
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 14, marginBottom: 22 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr 1.1fr', gap: 14, marginBottom: 16 }}>
           <Card>
-            <Mono style={{ marginBottom: 12 }}>Composite distribution</Mono>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, height: 120 }}>
+            <Mono style={{ marginBottom: 14 }}>Deals by status</Mono>
+            <FunnelA data={STATUS_FILTER_ORDER.filter((s) => s !== 'archived').map((s) => ({ label: STATUS_LABEL[s], value: statusCount(s), color: STATUS_A[s].color }))} />
+          </Card>
+          <Card>
+            <Mono style={{ marginBottom: 14 }}>Composite distribution</Mono>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, height: 132 }}>
               {buckets.map((b) => (
                 <div key={b.range} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 6, height: '100%' }}>
                   <span style={{ fontFamily: FONT.mono, fontSize: 13, fontWeight: 700, color: b.color }}>{b.n}</span>
-                  <div style={{ width: '70%', height: `${(b.n / bucketMax) * 80}px`, minHeight: 2, background: `linear-gradient(180deg, ${b.color}, ${alpha(b.color, 0.4)})`, borderRadius: '4px 4px 0 0' }} />
+                  <div style={{ width: '64%', height: `${(b.n / bucketMax) * 86}px`, minHeight: 2, background: `linear-gradient(180deg, ${b.color}, ${alpha(b.color, 0.4)})`, borderRadius: '4px 4px 0 0', transition: 'height 0.6s' }} />
                   <span style={{ fontSize: 10, color: T.muted, fontFamily: FONT.mono }}>{b.range}</span>
                 </div>
               ))}
             </div>
           </Card>
           <Card>
-            <Mono style={{ marginBottom: 12 }}>Pipeline snapshot</Mono>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <Snap label="Deals shown" value={`${shown.length}`} />
-              <Snap label="Capital" value={usdm(capital)} color={T.cyan} />
-              <Snap label="Avg composite" value={`${avgComposite}`} color={scoreColor(avgComposite)} />
-              <Snap label="Sent to IC" value={`${statusCount('sent-to-ic')}`} color={T.amber} />
-            </div>
+            <Mono style={{ marginBottom: 14 }}>Geography mix</Mono>
+            <DonutA data={geoMix} />
           </Card>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
+          <Snap label="Deals shown" value={`${shown.length}`} />
+          <Snap label="Capital" value={usdm(capital)} color={T.cyan} />
+          <Snap label="Avg composite" value={`${avgComposite}`} color={scoreColor(avgComposite)} />
+          <Snap label="Sent to IC" value={`${statusCount('sent-to-ic')}`} color={T.amber} />
         </div>
 
         <Card style={{ marginBottom: 16 }}>
@@ -150,10 +166,10 @@ export function PipelineA() {
               </tr>
             </thead>
             <tbody>
-              {shown.map((d) => {
+              {shown.map((d, i) => {
                 const a = A.get(d.id)!
                 return (
-                  <tr key={d.id} onClick={() => navigate(`/a/deal/${d.id}`)} style={{ cursor: 'pointer', borderTop: `1px solid ${T.border}`, transition: 'background 0.12s' }}
+                  <tr key={d.id} className="fade-up" onClick={() => navigate(`/a/deal/${d.id}`)} style={{ cursor: 'pointer', borderTop: `1px solid ${T.border}`, transition: 'background 0.12s', animationDelay: `${Math.min(i * 30, 400)}ms` }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = T.cardHi }} onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}>
                     <td style={{ padding: '13px 16px', maxWidth: 360 }}>
                       <div style={{ fontWeight: 600, color: T.text, fontSize: 13 }}>{d.name}</div>

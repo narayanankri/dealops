@@ -4,7 +4,7 @@
 // ───────────────────────────────────────────────────────────
 import { useState } from 'react'
 import { T, FONT, alpha } from '../theme'
-import { Card, Mono, SectionTitle, RangeBarA } from '../uiA'
+import { Card, Mono, SectionTitle, RangeBarA, PeerScatterA } from '../uiA'
 import { mult, signedPct, usdm } from '@/lib/format'
 import { compsEquityFrom } from '@/engine'
 import type { Analysis, Deal } from '@/types'
@@ -30,7 +30,7 @@ function Step({ k, v, accent, strong }: { k: string; v: string; accent?: boolean
 }
 const Op = ({ children }: { children: React.ReactNode }) => <span style={{ padding: '0 4px', color: T.muted }}>{children}</span>
 
-export function CompsA({ deal }: { deal: Deal; a: Analysis }) {
+export function CompsA({ deal, a }: { deal: Deal; a: Analysis }) {
   const baseRev = deal.assumptions.baseRevenueUSDm
   const netDebt = deal.assumptions.netDebtUSDm
   const m0 = deal.assumptions.ebitdaMarginPct?.[0]
@@ -88,6 +88,20 @@ export function CompsA({ deal }: { deal: Deal; a: Analysis }) {
           <p style={{ padding: '24px 0', textAlign: 'center', fontSize: 13, color: T.muted }}>Select at least one peer below to build a comparables range.</p>
         )}
       </Card>
+
+      {/* 1b — peer landscape bubble */}
+      {(() => {
+        const pts = [
+          ...included.filter((p) => p.revGrowthPct != null && p.evRevenue != null).map((p) => ({ label: p.name, x: p.evRevenue as number, y: p.revGrowthPct as number, size: p.scaleUSDm })),
+          { label: deal.name, x: a.assetValue.impliedEVRevenue, y: deal.assumptions.revGrowthPct?.[0] ?? 0, size: baseRev, target: true },
+        ]
+        return pts.length > 1 ? (
+          <Card padding="20px 24px">
+            <SectionTitle kicker="bubble size = revenue scale · ★ = this deal at its implied multiple" title="Peer landscape — multiple vs growth" />
+            <PeerScatterA points={pts} />
+          </Card>
+        ) : null
+      })()}
 
       {/* 2 — the arithmetic */}
       {enough && (

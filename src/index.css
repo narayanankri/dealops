@@ -104,6 +104,16 @@ h1, h2 {
   .radar-form { animation: none; }
 }
 
+/* Version A — pulsing status dot (sidebar, landing "Live" marker). */
+@keyframes va-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+.pulsing { animation: va-pulse 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .pulsing { animation: none; }
+}
+
 /* Honest "scan" motif — runs ONLY while the engine is actually recomputing (Re-run).
    A single accent sweep passes down the card, then stops. No idle decoration. */
 .scanning { position: relative; overflow: hidden; }

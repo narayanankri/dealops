@@ -293,6 +293,159 @@ export function BarsA({ data, height = 180, unit = '' }: { data: { label: string
   )
 }
 
+// ── Animated SVG ring gauge (arc sweeps + number counts up on mount) ──
+export function RingGaugeA({ label, score, size = 88, stroke = 7 }: { label: string; score: number; size?: number; stroke?: number }) {
+  const r = (size - stroke) / 2
+  const cx = size / 2
+  const c = 2 * Math.PI * r
+  const color = scoreColor(score)
+  const frac = Math.max(0, Math.min(100, score)) / 100
+  const [shown, setShown] = useState(false)
+  useEffect(() => {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (reduce) { setShown(true); return }
+    const id = setTimeout(() => setShown(true), 30)
+    return () => clearTimeout(id)
+  }, [])
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+      <div style={{ position: 'relative', width: size, height: size }}>
+        <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+          <circle cx={cx} cy={cx} r={r} fill="none" stroke={T.border} strokeWidth={stroke} />
+          <circle
+            cx={cx} cy={cx} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round"
+            strokeDasharray={c} strokeDashoffset={shown ? c * (1 - frac) : c}
+            style={{ transition: 'stroke-dashoffset 0.9s cubic-bezier(0.22,1,0.36,1)' }}
+          />
+        </svg>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: FONT.serif, fontSize: size * 0.34, fontWeight: 700, color: T.text, letterSpacing: -1 }}>
+            <CountUp value={Math.round(score)} duration={900} />
+          </span>
+        </div>
+      </div>
+      <Mono>{label}</Mono>
+    </div>
+  )
+}
+
+// ── Horizontal bar set / funnel (status counts) ──
+export function FunnelA({ data }: { data: { label: string; value: number; color: string }[] }) {
+  const max = Math.max(1, ...data.map((d) => d.value))
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+      {data.map((d, i) => (
+        <div key={d.label} className="fade-up" style={{ display: 'flex', alignItems: 'center', gap: 10, animationDelay: `${i * 50}ms` }}>
+          <span style={{ width: 92, flexShrink: 0, fontSize: 11, color: T.muted, textAlign: 'right' }}>{d.label}</span>
+          <div style={{ flex: 1, height: 14, background: T.border, borderRadius: 4, overflow: 'hidden' }}>
+            <div style={{ width: `${(d.value / max) * 100}%`, height: '100%', background: `linear-gradient(90deg, ${alpha(d.color, 0.6)}, ${d.color})`, borderRadius: 4, transition: 'width 0.6s' }} />
+          </div>
+          <span style={{ width: 18, fontFamily: FONT.mono, fontSize: 12, fontWeight: 700, color: d.color, textAlign: 'right' }}>{d.value}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Donut + legend (mix) ──
+export function DonutA({ data, size = 150 }: { data: { label: string; value: number; color: string }[]; size?: number }) {
+  const total = data.reduce((s, d) => s + d.value, 0) || 1
+  const stroke = 16
+  const r = size / 2 - stroke / 2 - 2
+  const cx = size / 2
+  const C = 2 * Math.PI * r
+  let acc = 0
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+      <svg width={size} height={size} style={{ flexShrink: 0 }}>
+        <g transform={`rotate(-90 ${cx} ${cx})`}>
+          {data.map((d) => {
+            const len = (d.value / total) * C
+            const seg = (
+              <circle key={d.label} cx={cx} cy={cx} r={r} fill="none" stroke={d.color} strokeWidth={stroke} strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-acc} />
+            )
+            acc += len
+            return seg
+          })}
+        </g>
+        <text x={cx} y={cx} textAnchor="middle" dominantBaseline="central" fontFamily={FONT.serif} fontWeight={700} fontSize={size * 0.26} fill={T.text}>{total}</text>
+      </svg>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {data.map((d) => (
+          <div key={d.label} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11.5 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: d.color, flexShrink: 0 }} />
+            <span style={{ color: T.mutedHi }}>{d.label}</span>
+            <span style={{ fontFamily: FONT.mono, color: T.muted }}>{d.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Peer-bubble scatter (x = EV/Revenue, y = growth %, size = scale) ──
+export type ScatterPoint = { label: string; x: number; y: number; size?: number; target?: boolean }
+export function PeerScatterA({ points, xLabel = 'EV / Revenue', yLabel = 'Growth %', height = 280 }: { points: ScatterPoint[]; xLabel?: string; yLabel?: string; height?: number }) {
+  const W = 460
+  const padL = 44, padR = 16, padT = 16, padB = 34
+  const xs = points.map((p) => p.x), ys = points.map((p) => p.y)
+  const xMax = Math.max(1, ...xs) * 1.12, yMax = Math.max(1, ...ys) * 1.12
+  const sx = (x: number) => padL + (x / xMax) * (W - padL - padR)
+  const sy = (y: number) => height - padB - (y / yMax) * (height - padT - padB)
+  const sizes = points.map((p) => p.size ?? 1)
+  const sMax = Math.max(1, ...sizes)
+  const rOf = (s?: number) => 5 + Math.sqrt((s ?? 1) / sMax) * 14
+  const ticks = [0, 0.25, 0.5, 0.75, 1]
+  return (
+    <svg viewBox={`0 0 ${W} ${height}`} width="100%">
+      {ticks.map((t) => {
+        const gx = padL + t * (W - padL - padR), gy = height - padB - t * (height - padT - padB)
+        return (
+          <g key={t}>
+            <line x1={padL} y1={gy} x2={W - padR} y2={gy} stroke={T.border} strokeWidth={0.6} opacity={0.5} />
+            <text x={padL - 6} y={gy} textAnchor="end" dominantBaseline="central" fontSize={9} fontFamily={FONT.mono} fill={T.muted}>{Math.round(t * yMax)}</text>
+            <text x={gx} y={height - padB + 14} textAnchor="middle" fontSize={9} fontFamily={FONT.mono} fill={T.muted}>{(t * xMax).toFixed(1)}x</text>
+          </g>
+        )
+      })}
+      <text x={(W) / 2} y={height - 4} textAnchor="middle" fontSize={9} fontFamily={FONT.mono} fill={T.muted} style={{ letterSpacing: 1, textTransform: 'uppercase' }}>{xLabel}</text>
+      <text x={12} y={height / 2} textAnchor="middle" fontSize={9} fontFamily={FONT.mono} fill={T.muted} transform={`rotate(-90 12 ${height / 2})`} style={{ letterSpacing: 1, textTransform: 'uppercase' }}>{yLabel}</text>
+      {points.map((p, i) => {
+        const x = sx(p.x), y = sy(p.y), rr = rOf(p.size)
+        const col = p.target ? T.magenta : i % 2 === 0 ? T.cyan : T.purpleSoft
+        return (
+          <g key={p.label}>
+            <circle cx={x} cy={y} r={rr} fill={alpha(col, 0.22)} stroke={col} strokeWidth={p.target ? 2 : 1.2} />
+            <text x={x} y={y - rr - 4} textAnchor="middle" fontSize={p.target ? 10 : 9} fontFamily={FONT.sans} fontWeight={p.target ? 700 : 500} fill={p.target ? T.magenta : T.mutedHi}>{p.label}</text>
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+// ── Valuation walk (round post-money over time, current highlighted) ──
+export function ValWalkA({ steps, fmt }: { steps: { label: string; sub?: string; value: number; current?: boolean }[]; fmt: (n: number) => string }) {
+  const max = Math.max(1, ...steps.map((s) => s.value))
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, height: 200, padding: '8px 4px' }}>
+      {steps.map((s, i) => {
+        const col = s.current ? T.cyan : T.purpleSoft
+        return (
+          <div key={i} className="fade-up" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 6, height: '100%', animationDelay: `${i * 60}ms` }}>
+            <span style={{ fontFamily: FONT.mono, fontSize: 10.5, fontWeight: 700, color: col, whiteSpace: 'nowrap' }}>{fmt(s.value)}</span>
+            <div style={{ width: '100%', maxWidth: 54, height: `${(s.value / max) * (200 - 70)}px`, minHeight: 3, background: `linear-gradient(180deg, ${col}, ${alpha(col, 0.35)})`, borderRadius: '4px 4px 0 0', transition: 'height 0.6s', boxShadow: s.current ? `0 0 14px ${alpha(T.cyan, 0.5)}` : undefined }} />
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 10.5, color: T.mutedHi, fontWeight: s.current ? 700 : 500 }}>{s.label}</div>
+              {s.sub && <div style={{ fontSize: 9.5, color: T.muted, fontFamily: FONT.mono }}>{s.sub}</div>}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Animated knowledge-graph strip (header motif) ──
 export function KGStrip({ height = 38 }: { height?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)

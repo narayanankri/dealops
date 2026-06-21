@@ -6,7 +6,7 @@
 // ───────────────────────────────────────────────────────────
 import { useState } from 'react'
 import { T, FONT, alpha, scoreColor } from '../theme'
-import { Card, Mono, SectionTitle, RangeBarA, BarsA } from '../uiA'
+import { Card, Mono, SectionTitle, RangeBarA, BarsA, ValWalkA } from '../uiA'
 import { mult, signedPct, usdm } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import { projectModel } from '@/engine/model'
@@ -552,6 +552,19 @@ export function ValuationA({ deal, a }: { deal: Deal; a: Analysis }) {
             <RangeBarA low={av.range.low} base={av.range.base} high={av.range.high} fmt={usdm} />
             <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.55, color: T.mutedHi }}>{deal.narrative.valuationVerdict}</p>
           </Card>
+
+          {(() => {
+            const rounds = (deal.roundHistory ?? []).filter((r) => r.postMoneyUSDm != null)
+            if (rounds.length < 1) return null
+            const walk = [...rounds].reverse().map((r) => ({ label: r.series, sub: /\d{4}/.exec(r.date)?.[0], value: r.postMoneyUSDm as number }))
+            walk.push({ label: 'This round', sub: 'ask', value: deal.ask.askValuationUSDm, current: true } as (typeof walk)[number] & { current: boolean })
+            return (
+              <Card padding="20px 24px">
+                <SectionTitle kicker="post-money by round · this round marked" title="Funding history" />
+                <ValWalkA steps={walk} fmt={usdm} />
+              </Card>
+            )
+          })()}
 
           {pm && <OperatingMetricsCard pm={pm} />}
 

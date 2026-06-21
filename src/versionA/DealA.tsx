@@ -9,8 +9,8 @@ import { useApp } from '@/lib/store'
 import { usdm } from '@/lib/format'
 import type { Analysis, Deal } from '@/types'
 import { TopBarA } from './TopBarA'
-import { T, FONT, alpha, scoreColor } from './theme'
-import { Card, Mono, Serif, StatusPill, VerdictBadge, Btn } from './uiA'
+import { T, FONT, alpha } from './theme'
+import { Card, Mono, Serif, StatusPill, VerdictBadge, Btn, RingGaugeA } from './uiA'
 import { OverviewA } from './tabs/OverviewA'
 import { MandateFitA } from './tabs/MandateFitA'
 import { MeritA } from './tabs/MeritA'
@@ -32,35 +32,6 @@ const TABS = [
 ] as const
 type TabKey = (typeof TABS)[number]['key']
 
-// ── Inline SVG ring gauge: arc proportional to score, serif number in the middle. ──
-function RingGauge({ label, score }: { label: string; score: number }) {
-  const size = 88
-  const stroke = 7
-  const r = (size - stroke) / 2
-  const cx = size / 2
-  const cy = size / 2
-  const circ = 2 * Math.PI * r
-  const pct = Math.max(0, Math.min(100, score)) / 100
-  const color = scoreColor(score)
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-      <div style={{ position: 'relative', width: size, height: size }}>
-        <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-          <circle cx={cx} cy={cy} r={r} fill="none" stroke={T.border} strokeWidth={stroke} />
-          <circle
-            cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round"
-            strokeDasharray={`${circ * pct} ${circ}`}
-            style={{ transition: 'stroke-dasharray 0.6s cubic-bezier(0.22,1,0.36,1)' }}
-          />
-        </svg>
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontFamily: FONT.serif, fontSize: 26, fontWeight: 700, color: T.text, letterSpacing: -0.5 }}>{Math.round(score)}</span>
-        </div>
-      </div>
-      <Mono style={{ marginTop: 8 }}>{label}</Mono>
-    </div>
-  )
-}
 
 function RecommendationStrip({ a }: { a: Analysis }) {
   return (
@@ -117,10 +88,10 @@ function DealHeader({ deal, a }: { deal: Deal; a: Analysis }) {
       </div>
 
       <div style={{ marginTop: 22, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, justifyItems: 'center' }}>
-        <RingGauge label="Composite" score={a.composite} />
-        <RingGauge label="Mandate fit" score={a.mandateFit.score} />
-        <RingGauge label="Standalone merit" score={a.meritScore} />
-        <RingGauge label="Data trust" score={a.dataTrustScore} />
+        <RingGaugeA label="Composite" score={a.composite} />
+        <RingGaugeA label="Mandate fit" score={a.mandateFit.score} />
+        <RingGaugeA label="Standalone merit" score={a.meritScore} />
+        <RingGaugeA label="Data trust" score={a.dataTrustScore} />
       </div>
     </Card>
   )

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { T, FONT } from './theme'
 import { Mono, Btn, CountUp } from './uiA'
 import { KnowledgeGraphA } from './KnowledgeGraphA'
@@ -10,12 +10,26 @@ export function LandingA({ onEnter }: { onEnter: () => void }) {
   const [email, setEmail] = useState('analyst@kpmg.com')
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const dateStr = now.toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: 'short' })
+  const timeStr = now.toLocaleTimeString()
 
   return (
     <div style={{ minHeight: '100vh', display: 'grid', gridTemplateColumns: 'minmax(0,1.15fr) minmax(360px,0.85fr)', background: T.bg, color: T.text, fontFamily: FONT.sans }}>
       {/* Hero */}
       <div style={{ position: 'relative', overflow: 'hidden', background: T.heroGrad, padding: '56px 56px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <KnowledgeGraphA />
+        {/* canvas affordance labels */}
+        <div style={{ position: 'absolute', top: 20, right: 22, pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: 6, fontFamily: FONT.mono, fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: T.cyan }}>
+          <span style={{ width: 6, height: 6, borderRadius: 3, background: T.cyan, boxShadow: `0 0 8px ${T.cyan}` }} className="pulsing" /> Live
+        </div>
+        <div style={{ position: 'absolute', bottom: 18, right: 22, pointerEvents: 'none', fontFamily: FONT.mono, fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: T.muted }}>
+          Hover · drag to explore
+        </div>
         <div style={{ position: 'relative', pointerEvents: 'none' }}>
           <Mono color={T.cyan} style={{ letterSpacing: 5 }}>◆ AI Deal Operations · Version A</Mono>
         </div>
@@ -42,9 +56,12 @@ export function LandingA({ onEnter }: { onEnter: () => void }) {
             ))}
           </div>
         </div>
-        <div style={{ position: 'relative', pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: T.muted, fontFamily: FONT.mono }}>
-          <span style={{ width: 6, height: 6, borderRadius: 3, background: T.green, boxShadow: `0 0 8px ${T.green}` }} />
-          Connected · Claude for Financial Services
+        <div style={{ position: 'relative', pointerEvents: 'none', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 11, color: T.muted, fontFamily: FONT.mono }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ width: 6, height: 6, borderRadius: 3, background: T.green, boxShadow: `0 0 8px ${T.green}` }} className="pulsing" />
+            <span style={{ color: T.mutedHi }}>{dateStr} · {timeStr}</span>
+          </div>
+          <div>Connected · Claude for Financial Services</div>
         </div>
       </div>
 
@@ -66,7 +83,8 @@ export function LandingA({ onEnter }: { onEnter: () => void }) {
             </>
           ) : (
             <>
-              <Field label="6-digit code" value={code} onChange={setCode} placeholder="••••••" mono />
+              <Mono style={{ marginBottom: 9 }}>6-digit code</Mono>
+              <OtpBoxes value={code} onChange={setCode} />
               <Btn variant="glow" size="lg" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }} onClick={onEnter}>
                 Enter →
               </Btn>
@@ -79,6 +97,32 @@ export function LandingA({ onEnter }: { onEnter: () => void }) {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function OtpBoxes({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const chars = Array.from({ length: 6 }, (_, i) => value[i] ?? '')
+  return (
+    <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      {chars.map((ch, i) => (
+        <input
+          key={i}
+          value={ch}
+          maxLength={1}
+          inputMode="numeric"
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, '').slice(0, 1)
+            const arr = Array.from({ length: 6 }, (_, k) => value[k] ?? '')
+            arr[i] = v
+            onChange(arr.join('').slice(0, 6))
+            if (v) (e.target.nextElementSibling as HTMLElement | null)?.focus()
+          }}
+          style={{ width: 44, height: 52, textAlign: 'center', background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, color: T.text, fontFamily: FONT.mono, fontSize: 20, fontWeight: 600, outline: 'none' }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = T.cyan }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = T.border }}
+        />
+      ))}
     </div>
   )
 }
