@@ -88,6 +88,22 @@ h1, h2 {
   .fade-up { animation: none; }
 }
 
+/* Spider/radar value shape "forms" from the chart hub whenever its tab mounts.
+   CSS-driven so it runs reliably on every fresh mount (no rAF/state timing race).
+   transform-box: view-box anchors transform-origin to the 440×336 viewBox centre. */
+@keyframes radar-form {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.radar-form {
+  transform-box: view-box;
+  transform-origin: 220px 168px;
+  animation: radar-form 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .radar-form { animation: none; }
+}
+
 /* Honest "scan" motif — runs ONLY while the engine is actually recomputing (Re-run).
    A single accent sweep passes down the card, then stops. No idle decoration. */
 .scanning { position: relative; overflow: hidden; }
