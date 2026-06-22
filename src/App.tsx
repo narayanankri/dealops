@@ -173,8 +173,8 @@ function VersionToggle({ version, onClick, onChooser }: { version: Version; onCl
   } as const
   return (
     <div style={{ position: 'fixed', right: 16, bottom: 16, zIndex: 9000, display: 'flex', gap: 8 }}>
-      <button onClick={onChooser} title="Back to the version chooser" style={{ ...base, borderRadius: 999 }}>
-        ⊞ Chooser
+      <button onClick={onChooser} title="Back to the version selector" style={{ ...base, borderRadius: 999 }}>
+        ⊞ Selector
       </button>
       <button onClick={onClick} title={toA ? 'Switch to Version A (KPMG facelift)' : 'Switch to Version B (Instrument)'} style={{ ...base, borderRadius: 999 }}>
         <span style={{ width: 7, height: 7, borderRadius: 4, background: accent, boxShadow: `0 0 8px ${accent}` }} />
