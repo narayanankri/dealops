@@ -7,6 +7,7 @@ import { projectModel } from '@/engine/model'
 import { compsEquityFrom } from '@/engine'
 import { exportMemoPdf } from '@/lib/exportMemoPdf'
 import { exportModelXlsx } from '@/lib/exportModelXlsx'
+import { researchPlan, type ResearchWorkstream, type ResearchOpenQuestion, type ResearchRedFlag } from '@/engine/research'
 import { useState } from 'react'
 import type { Analysis, BusinessVitals, Deal, Mandate, OperatingMetric, ProjectedModel, RevenueLine, Returns, SensitivityGrid, ValuationAssumptions } from '@/types'
 
@@ -2040,49 +2041,176 @@ function KVline({ label, value }: { label: string; value: string }) {
 }
 
 // ─────────────────────────── Research (§7.7) & History (§7.8) ───────────────────────────
+const RP_PRI = { high: 'neg', medium: 'warn', low: 'accent' } as const
+const RP_COLORVAR: Record<string, string> = { high: 'var(--color-neg)', medium: 'var(--color-warn)', low: 'var(--color-ink-3)' }
+const RP_CATVAR: Record<string, string> = { financial: 'var(--color-pos)', legal: 'var(--color-neg)', commercial: 'var(--color-accent)', management: 'var(--color-warn)', market: 'var(--color-indigo)' }
+
+function RpChip({ label, color }: { label: string; color: string }) {
+  return (
+    <span className="inline-flex shrink-0 items-center rounded font-mono text-[9px] font-bold tracking-wide uppercase" style={{ color, background: `color-mix(in srgb, ${color} 14%, transparent)`, border: `1px solid color-mix(in srgb, ${color} 38%, transparent)`, padding: '2px 6px' }}>{label}</span>
+  )
+}
+
+function WorkstreamCard({ ws }: { ws: ResearchWorkstream }) {
+  return (
+    <Card accent={RP_PRI[ws.priority]} className="px-6 py-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="font-display text-base font-semibold text-ink">{ws.name}</h3>
+          <p className="mt-1 text-[13px] leading-relaxed text-ink-2">{ws.objective}</p>
+        </div>
+        <RpChip label={`${ws.priority} priority`} color={RP_COLORVAR[ws.priority]} />
+      </div>
+      <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-ink-3">
+        <span><span className="text-ink-2">Owner:</span> {ws.owner}</span>
+        {ws.addresses.length > 0 && <span><span className="text-ink-2">Addresses:</span> {ws.addresses.join(', ')}</span>}
+      </div>
+      <div className="mt-3 space-y-2">
+        {ws.tasks.map((t, i) => (
+          <div key={i} className="rounded-md border-l-2 border-accent/60 bg-panel-2/50 px-3 py-2.5">
+            <div className="text-[13px] font-medium text-ink">
+              <span className="mr-2 font-mono text-accent-2">{String(i + 1).padStart(2, '0')}</span>
+              {t.task}
+            </div>
+            {t.rationale && <p className="mt-1 text-[11px] leading-relaxed text-ink-3"><span className="font-medium text-ink-2">Why: </span>{t.rationale}</p>}
+            {t.deliverable && <p className="mt-0.5 text-[11px] leading-relaxed text-ink-3"><span className="font-medium text-ink-2">Deliverable: </span>{t.deliverable}</p>}
+          </div>
+        ))}
+      </div>
+    </Card>
+  )
+}
+
+function OpenQuestionsCard({ qs }: { qs: ResearchOpenQuestion[] }) {
+  return (
+    <Card className="px-6 py-5">
+      <SectionTitle hint={`${qs.length}`}>Open questions</SectionTitle>
+      <div className="space-y-1.5">
+        {qs.map((q, i) => {
+          const c = RP_CATVAR[q.category] ?? 'var(--color-ink-3)'
+          return (
+            <div key={i} className="flex items-start gap-2.5 rounded-md bg-panel-2/40 px-3 py-2" style={{ borderLeft: `2px solid ${q.blocker ? 'var(--color-neg)' : c}` }}>
+              <RpChip label={q.category} color={c} />
+              {q.blocker && <RpChip label="blocker" color="var(--color-neg)" />}
+              <span className="text-[13px] leading-relaxed text-ink-2">{q.question}</span>
+            </div>
+          )
+        })}
+      </div>
+    </Card>
+  )
+}
+
+function RedFlagsCard({ flags }: { flags: ResearchRedFlag[] }) {
+  return (
+    <Card accent="neg" className="px-6 py-5">
+      <SectionTitle hint={`${flags.length}`}>Red flags</SectionTitle>
+      <div className="space-y-2.5">
+        {flags.map((fl, i) => {
+          const c = RP_COLORVAR[fl.severity]
+          return (
+            <div key={i} className="rounded-md px-3 py-2.5" style={{ borderLeft: `3px solid ${c}`, background: `color-mix(in srgb, ${c} 7%, transparent)` }}>
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-[13px] font-medium text-ink">{fl.flag}</span>
+                <RpChip label={`sev ${fl.severity}${fl.likelihood ? ` · lik ${fl.likelihood}` : ''}`} color={c} />
+              </div>
+              {fl.verify && <p className="mt-1 text-[11px] leading-relaxed text-ink-3"><span className="font-medium text-ink-2">To verify: </span>{fl.verify}</p>}
+              {fl.impact && <p className="mt-0.5 text-[11px] leading-relaxed text-ink-3"><span className="font-medium text-ink-2">Impact: </span>{fl.impact}</p>}
+            </div>
+          )
+        })}
+      </div>
+    </Card>
+  )
+}
+
 export function ResearchTab({ deal, a }: { deal: Deal; a: Analysis }) {
+  const { mandate } = useApp()
+  const plan = researchPlan(deal, a, mandate)
   return (
     <div className="space-y-5">
+      {/* Plan header */}
+      <Card className="px-6 py-5">
+        <SectionTitle kicker="diligence workplan · source-cited" hint={`${plan.confidence} confidence · ${plan.sources.length} sources`}>Research plan — {deal.name}</SectionTitle>
+        <p className="text-sm leading-relaxed text-ink-2">{plan.summary}</p>
+        <p className="mt-2 text-[11px] text-ink-3 italic">Target: {deal.sector} · {deal.geography} · {deal.stage} · derived deterministically from the screened deal record</p>
+      </Card>
+
+      {plan.criticalPath.length > 0 && (
+        <Card accent="warn" className="px-6 py-5">
+          <SectionTitle kicker="gating items">Critical path</SectionTitle>
+          <ol className="list-decimal space-y-1.5 pl-5 text-sm leading-relaxed text-ink-2 marker:text-ink-3">
+            {plan.criticalPath.map((it, i) => <li key={i}>{it}</li>)}
+          </ol>
+        </Card>
+      )}
+
+      {plan.workstreams.length > 0 && (
+        <div className="space-y-3">
+          <div className="font-mono text-[10px] tracking-[0.14em] text-accent-2 uppercase">Workstreams ({plan.workstreams.length})</div>
+          {plan.workstreams.map((ws) => <WorkstreamCard key={ws.key} ws={ws} />)}
+        </div>
+      )}
+
+      {plan.openQuestions.length > 0 && <OpenQuestionsCard qs={plan.openQuestions} />}
+      {plan.redFlags.length > 0 && <RedFlagsCard flags={plan.redFlags} />}
+
+      {/* Evidence & sources — the rigorous backing */}
+      <div className="font-mono text-[10px] tracking-[0.14em] text-accent-2 uppercase">Evidence &amp; sources</div>
       <CoherencePanel checks={a.integrity.checks} />
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-      <Card className="px-6 py-5">
-        <SectionTitle hint="source per figure">Sourcing & evidence</SectionTitle>
-        <div className="space-y-2.5">
-          {deal.dataTrust.fields.map((f) => (
-            <div key={f.label} className="border-b border-line-soft/40 pb-2.5">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-ink-2">{f.label}</span>
-                <div className="flex items-center gap-2">
-                  <Cite source={f.source} url={f.url} />
-                  <TrustTag basis={f.basis} confidence={f.confidence} />
+        <Card className="px-6 py-5">
+          <SectionTitle hint="source per figure">Sourcing & evidence</SectionTitle>
+          <div className="space-y-2.5">
+            {deal.dataTrust.fields.map((f) => (
+              <div key={f.label} className="border-b border-line-soft/40 pb-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-ink-2">{f.label}</span>
+                  <div className="flex items-center gap-2">
+                    <Cite source={f.source} url={f.url} />
+                    <TrustTag basis={f.basis} confidence={f.confidence} />
+                  </div>
                 </div>
+                {f.method && (
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-ink-3">
+                    <span className={cn('font-medium', basisToneText[f.basis])}>{f.basis === 'estimated' ? 'Estimated: ' : 'Inferred: '}</span>
+                    {f.method}
+                  </p>
+                )}
               </div>
-              {f.method && (
-                <p className="mt-0.5 text-[11px] leading-relaxed text-ink-3">
-                  <span className={cn('font-medium', basisToneText[f.basis])}>{f.basis === 'estimated' ? 'Estimated: ' : 'Inferred: '}</span>
-                  {f.method}
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
-      </Card>
-      <Card className="px-6 py-5">
-        <SectionTitle>Legal / sanctions deep-dive</SectionTitle>
-        <p className="text-sm leading-relaxed text-ink-2">{deal.narrative.legalStanding}</p>
-        <div className="mt-4">
-          <SectionTitle>Recent events</SectionTitle>
-          <ul className="space-y-2 text-sm">
-            {deal.news.map((ev, i) => (
-              <li key={i} className="flex gap-3">
-                <span className="w-14 shrink-0 text-ink-3 tnum">{ev.date}</span>
-                <span className="text-ink-2">{ev.headline}</span>
+            ))}
+          </div>
+        </Card>
+        <Card className="px-6 py-5">
+          <SectionTitle>Legal / sanctions deep-dive</SectionTitle>
+          <p className="text-sm leading-relaxed text-ink-2">{deal.narrative.legalStanding}</p>
+          <div className="mt-4">
+            <SectionTitle>Recent events</SectionTitle>
+            <ul className="space-y-2 text-sm">
+              {deal.news.map((ev, i) => (
+                <li key={i} className="flex gap-3">
+                  <span className="w-14 shrink-0 text-ink-3 tnum">{ev.date}</span>
+                  <span className="text-ink-2">{ev.headline}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Card>
+      </div>
+
+      {plan.sources.length > 0 && (
+        <Card className="px-6 py-5">
+          <SectionTitle hint={`${plan.sources.length}`}>Sources</SectionTitle>
+          <ol className="space-y-1.5 text-[13px]">
+            {plan.sources.map((s, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="shrink-0 font-mono text-ink-3">[{i + 1}]</span>
+                {s.url ? <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-accent-2 hover:underline">{s.title}</a> : <span className="text-ink-2">{s.title}</span>}
               </li>
             ))}
-          </ul>
-        </div>
-      </Card>
-      </div>
+          </ol>
+        </Card>
+      )}
     </div>
   )
 }
