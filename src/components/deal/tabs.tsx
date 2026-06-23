@@ -5,6 +5,8 @@ import { cn } from '@/lib/cn'
 import { useApp } from '@/lib/store'
 import { projectModel } from '@/engine/model'
 import { compsEquityFrom } from '@/engine'
+import { exportMemoPdf } from '@/lib/exportMemoPdf'
+import { exportModelXlsx } from '@/lib/exportModelXlsx'
 import { useState } from 'react'
 import type { Analysis, BusinessVitals, Deal, Mandate, OperatingMetric, ProjectedModel, RevenueLine, Returns, SensitivityGrid, ValuationAssumptions } from '@/types'
 
@@ -895,7 +897,7 @@ export function CompsTab({ deal, a }: { deal: Deal; a: Analysis }) {
 
 // ─────────────────────────── Valuation & Scenarios (§7.5) ───────────────────────────
 export function ValuationTab({ deal, a }: { deal: Deal; a: Analysis }) {
-  const { updateAssumptions, resetDeal } = useApp()
+  const { updateAssumptions, resetDeal, mandate } = useApp()
   const av = a.assetValue
   const asm = deal.assumptions
   const set = (patch: Partial<ValuationAssumptions>) => updateAssumptions(deal.id, patch)
@@ -903,6 +905,10 @@ export function ValuationTab({ deal, a }: { deal: Deal; a: Analysis }) {
 
   return (
     <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-ink-3">Editable assumptions drive the live model — export it to a working Excel workbook.</p>
+        <Button onClick={() => exportModelXlsx(deal, a, mandate)}>Export Excel model</Button>
+      </div>
       {a.integrity.warnings.length > 0 && (
         <Card accent={a.integrity.blocking ? 'neg' : 'warn'} className={cn('px-5 py-4', a.integrity.blocking ? 'bg-neg-bg/30' : 'bg-warn-bg/30')}>
           <div className="flex items-center gap-2 text-sm font-semibold text-ink">
@@ -1540,22 +1546,8 @@ const sevTone = { high: 'neg', medium: 'warn', low: 'pos' } as const
 
 // Print the memo to PDF. The browser uses document.title as the default filename,
 // so we swap in a clean "<Deal> — IC Memo" name for the duration of the print, then
-// restore it. The @media print stylesheet (index.css) re-maps the dark design tokens
-// to a light palette and hides the app chrome so only the memo renders.
-function exportMemoPdf(dealName: string) {
-  const prev = document.title
-  const restore = () => {
-    document.title = prev
-    window.removeEventListener('afterprint', restore)
-  }
-  document.title = `${dealName} — IC Memo`
-  window.addEventListener('afterprint', restore)
-  window.print()
-  // Fallback for browsers that don't fire afterprint reliably.
-  window.setTimeout(restore, 1000)
-}
-
 export function MemoTab({ deal, a }: { deal: Deal; a: Analysis }) {
+  const { mandate } = useApp()
   const n = deal.narrative
   const av = a.assetValue
   const asm = deal.assumptions
@@ -1578,7 +1570,7 @@ export function MemoTab({ deal, a }: { deal: Deal; a: Analysis }) {
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2 print:hidden">
-          <Button onClick={() => exportMemoPdf(deal.name)}>Export PDF</Button>
+          <Button onClick={() => exportMemoPdf(deal, a, mandate)}>Export PDF</Button>
           <span className="whitespace-nowrap text-right text-[10px] text-ink-3">Prepared by AI Deal Operations</span>
         </div>
       </div>

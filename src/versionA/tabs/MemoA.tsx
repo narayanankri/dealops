@@ -3,8 +3,10 @@
 // memo; PDF export omitted), re-skinned with the navy/serif primitives.
 // ───────────────────────────────────────────────────────────
 import { T, FONT, alpha } from '../theme'
-import { Card, Mono, Serif } from '../uiA'
+import { Card, Mono, Serif, Btn } from '../uiA'
 import { mult, signedPct, usdm } from '@/lib/format'
+import { useApp } from '@/lib/store'
+import { exportMemoPdf } from '@/lib/exportMemoPdf'
 import type { Analysis, Deal } from '@/types'
 
 const sevColor = { high: T.red, medium: T.amber, low: T.green } as const
@@ -74,6 +76,7 @@ function basisOfAnalysis(deal: Deal, a: Analysis): string {
 }
 
 export function MemoA({ deal, a }: { deal: Deal; a: Analysis }) {
+  const { mandate } = useApp()
   const n = deal.narrative
   const av = a.assetValue
   const asm = deal.assumptions
@@ -98,7 +101,10 @@ export function MemoA({ deal, a }: { deal: Deal; a: Analysis }) {
             {deal.foundedYear ? ` · Founded ${deal.foundedYear}` : ''} · Proposed ticket {usdm(deal.ticketUSDm)} ({deal.instrument})
           </p>
         </div>
-        <span style={{ flexShrink: 0, textAlign: 'right', fontSize: 10, color: T.muted, fontFamily: FONT.mono }}>Prepared by AI Deal Operations</span>
+        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+          <Btn variant="cyan" onClick={() => exportMemoPdf(deal, a, mandate)}>Export PDF</Btn>
+          <span style={{ textAlign: 'right', fontSize: 10, color: T.muted, fontFamily: FONT.mono }}>Prepared by AI Deal Operations</span>
+        </div>
       </div>
 
       <MemoChapter label="Executive verdict" />

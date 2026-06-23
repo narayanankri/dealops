@@ -6,9 +6,10 @@
 // ───────────────────────────────────────────────────────────
 import { useState } from 'react'
 import { T, FONT, alpha, scoreColor } from '../theme'
-import { Card, Mono, SectionTitle, RangeBarA, BarsA, ValWalkA } from '../uiA'
+import { Card, Mono, SectionTitle, RangeBarA, BarsA, ValWalkA, Btn } from '../uiA'
 import { mult, signedPct, usdm } from '@/lib/format'
 import { useApp } from '@/lib/store'
+import { exportModelXlsx } from '@/lib/exportModelXlsx'
 import { projectModel } from '@/engine/model'
 import type { Analysis, Deal, OperatingMetric, ProjectedModel, Returns, SensitivityGrid, ValuationAssumptions } from '@/types'
 
@@ -518,7 +519,7 @@ function LockedModelPreview() {
 }
 
 export function ValuationA({ deal, a }: { deal: Deal; a: Analysis }) {
-  const { updateAssumptions, resetDeal } = useApp()
+  const { updateAssumptions, resetDeal, mandate } = useApp()
   const av = a.assetValue
   const asm = deal.assumptions
   const set = (patch: Partial<ValuationAssumptions>) => updateAssumptions(deal.id, patch)
@@ -526,6 +527,10 @@ export function ValuationA({ deal, a }: { deal: Deal; a: Analysis }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <span style={{ fontSize: 13, color: T.muted }}>Editable assumptions drive the live model — export it to a working Excel workbook.</span>
+        <Btn variant="cyan" onClick={() => exportModelXlsx(deal, a, mandate)}>Export Excel model</Btn>
+      </div>
       {a.integrity.warnings.length > 0 && (
         <Card accent={a.integrity.blocking ? T.red : T.amber} padding="16px 20px" style={{ background: alpha(a.integrity.blocking ? T.red : T.amber, 0.08) }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: T.text }}>
