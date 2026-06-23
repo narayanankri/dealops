@@ -120,7 +120,7 @@ try {
     let authorCallN = 0
     globalThis.fetch = async (url, opts) => {
       const body = JSON.parse(opts.body)
-      reqs.push({ url, body })
+      reqs.push({ url, body, headers: opts.headers })
       const isCritique = JSON.stringify(body.messages).includes('DEAL UNDER REVIEW')
       if (isCritique) return reply({ content: [{ type: 'text', text: JSON.stringify({ blocking: [], warnings: ['w'], questions: ['q'], raw: 'ok' }) }], stop_reason: 'end_turn', usage })
       authorCallN++
@@ -136,6 +136,8 @@ try {
     ok('request carries the model', aReq.model === 'claude-opus-4-8')
     ok('system block is cache_control 1h (caching contract)', aReq.system?.[0]?.cache_control?.ttl === '1h', JSON.stringify(aReq.system?.[0]?.cache_control))
     ok('research tools (web_search + web_fetch) are attached', Array.isArray(aReq.tools) && aReq.tools.length === 2, JSON.stringify(aReq.tools?.map?.((t) => t.name)))
+    ok('uses the basic, dependency-free tool versions (no code-exec needed)', aReq.tools?.[0]?.type === 'web_search_20250305' && aReq.tools?.[1]?.type === 'web_fetch_20250910', JSON.stringify(aReq.tools?.map?.((t) => t.type)))
+    ok('no anthropic-beta header is sent (none required)', !Object.keys(reqs[0].headers ?? {}).some((h) => h.toLowerCase() === 'anthropic-beta'), 'unexpected beta header')
     ok('adaptive thinking + high effort set', aReq.thinking?.type === 'adaptive' && aReq.output_config?.effort === 'high')
     ok('usage accumulates across calls', p.usage.outputTokens === 400 * 2 && p.usage.cacheReadInputTokens === 200 * 2, JSON.stringify(p.usage))
 

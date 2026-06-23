@@ -110,10 +110,16 @@ export function createAnthropicProvider(cfg: AnthropicConfig): AnthropicProvider
   const url = (cfg.baseUrl ?? 'https://api.anthropic.com') + '/v1/messages'
   const usage: Usage = { calls: 0, inputTokens: 0, outputTokens: 0, cacheReadInputTokens: 0, cacheWriteInputTokens: 0 }
 
-  // Server-side research tools — Anthropic runs these; results return inline. No client execution loop.
+  // Server-side research tools — Anthropic runs these; results return inline.
+  // Basic, dependency-free tool versions: the later (…2026xxxx) "dynamic filtering"
+  // versions require the code-execution tool to also be enabled — we don't need that
+  // for authoring. No anthropic-beta header is required for either tool (verified
+  // against the API docs, 2026-06). NB: the org admin must enable Web Search in the
+  // Claude Console, and web_search is billed separately ($10 / 1,000 searches).
+  // max_uses bounds cost; MAX_TOOL_CONTINUATIONS bounds the client continuation loop.
   const RESEARCH_TOOLS = [
-    { type: 'web_search_20260209', name: 'web_search' },
-    { type: 'web_fetch_20260209', name: 'web_fetch' },
+    { type: 'web_search_20250305', name: 'web_search', max_uses: 20 },
+    { type: 'web_fetch_20250910', name: 'web_fetch', max_uses: 20 },
   ]
 
   // One Messages-API call. `system` is a cache_control'd block so the frozen spec/schema (and the
