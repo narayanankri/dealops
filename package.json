@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "gate": "node scripts/gate.mjs",
-    "author": "node scripts/author-deal.mjs"
+    "author": "node scripts/author-deal.mjs",
+    "test:headless": "node scripts/test-headless.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.0",

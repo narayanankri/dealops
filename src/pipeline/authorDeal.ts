@@ -32,7 +32,7 @@ export interface AuthorDealOptions {
 export interface PipelineResult {
   accepted: boolean // true ⇢ 0 blocking from BOTH the ledger and the Director
   deal: Deal
-  analysis: Analysis
+  analysis?: Analysis // undefined only if every draft was too malformed for the engine to run
   rounds: number
   ledgerBlocking: CoherenceCheck[]
   ledgerWarnings: CoherenceCheck[]
@@ -64,19 +64,33 @@ export async function authorDeal(opts: AuthorDealOptions): Promise<PipelineResul
   let deal = await provider.author({ brief, mandate, authoringSpec, schema })
   note(0, `${provider.name} drafted ${deal?.id ?? '(no id)'}`)
 
-  let analysis = analyze(deal, mandate)
+  let analysis: Analysis | undefined
   let critique: DirectorReport | undefined
 
   for (let round = 1; round <= maxRounds; round++) {
-    // 1. Deterministic gate (structural + Coherence Ledger).
+    // 1. Deterministic gate. Structural check runs FIRST so a malformed LLM payload can
+    //    never reach (and throw inside) the engine; analyze() is then wrapped so any
+    //    residual engine error becomes a blocking item to feed back, not a crash.
     const gaps = structuralGaps(deal)
-    const checks = analysis.integrity.checks
-    let ledgerBlocking = checks.filter((c) => c.severity === 'blocking')
-    const ledgerWarnings = checks.filter((c) => c.severity === 'warn')
-    if (gaps.length) ledgerBlocking = [...ledgerBlocking, { id: 'structural', label: 'Structural', severity: 'blocking', detail: `missing/invalid: ${gaps.join(', ')}` }]
+    let ledgerBlocking: CoherenceCheck[] = []
+    let ledgerWarnings: CoherenceCheck[] = []
+    let roundAnalysis: Analysis | undefined
+    if (gaps.length) {
+      ledgerBlocking = [{ id: 'structural', label: 'Structural', severity: 'blocking', detail: `missing/invalid: ${gaps.join(', ')}` }]
+    } else {
+      try {
+        roundAnalysis = analyze(deal, mandate)
+        const checks = roundAnalysis.integrity.checks
+        ledgerBlocking = checks.filter((c) => c.severity === 'blocking')
+        ledgerWarnings = checks.filter((c) => c.severity === 'warn')
+      } catch (err) {
+        ledgerBlocking = [{ id: 'engine-error', label: 'Engine error', severity: 'blocking', detail: err instanceof Error ? err.message : String(err) }]
+      }
+      if (roundAnalysis) analysis = roundAnalysis
+    }
 
-    // 2. Adversarial gate (the Director) — only meaningful once it's structurally sound.
-    critique = gaps.length ? undefined : await provider.critique(deal, rubric, checks)
+    // 2. Adversarial gate (the Director) — only once it's structurally sound and the engine ran.
+    critique = roundAnalysis ? await provider.critique(deal, rubric, roundAnalysis.integrity.checks) : undefined
     const dirBlocking = critique?.blocking ?? []
 
     const clean = ledgerBlocking.length === 0 && dirBlocking.length === 0
@@ -86,7 +100,6 @@ export async function authorDeal(opts: AuthorDealOptions): Promise<PipelineResul
 
     // 3. Revise: hand the failures back to the author.
     deal = await provider.author({ brief, mandate, authoringSpec, schema, priorDraft: deal, ledgerFailures: ledgerBlocking, critique })
-    analysis = analyze(deal, mandate)
   }
 
   return { accepted: false, deal, analysis, rounds: maxRounds, ledgerBlocking: [], ledgerWarnings: [], critique, log }
