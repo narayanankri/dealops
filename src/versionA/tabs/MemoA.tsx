@@ -4,7 +4,7 @@
 // ───────────────────────────────────────────────────────────
 import { T, FONT, alpha } from '../theme'
 import { Card, Mono, Serif, Btn } from '../uiA'
-import { mult, signedPct, usdm } from '@/lib/format'
+import { mult, signedPct, usdm, pctSmart } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import { exportMemoPdf } from '@/lib/exportMemoPdf'
 import type { Analysis, Deal } from '@/types'
@@ -76,7 +76,7 @@ function basisOfAnalysis(deal: Deal, a: Analysis): string {
 }
 
 export function MemoA({ deal, a }: { deal: Deal; a: Analysis }) {
-  const { mandate } = useApp()
+  const { mandate, icSubmissionFor } = useApp()
   const n = deal.narrative
   const av = a.assetValue
   const asm = deal.assumptions
@@ -102,7 +102,7 @@ export function MemoA({ deal, a }: { deal: Deal; a: Analysis }) {
           </p>
         </div>
         <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-          <Btn variant="cyan" onClick={() => exportMemoPdf(deal, a, mandate)}>Export PDF</Btn>
+          <Btn variant="cyan" onClick={() => exportMemoPdf(deal, a, mandate, icSubmissionFor(deal.id))}>Export PDF</Btn>
           <span style={{ textAlign: 'right', fontSize: 10, color: T.muted, fontFamily: FONT.mono }}>Prepared by AI Deal Operations</span>
         </div>
       </div>
@@ -111,7 +111,7 @@ export function MemoA({ deal, a }: { deal: Deal; a: Analysis }) {
       <MemoSection title="Executive summary">
         <div style={{ marginBottom: 16, borderRadius: 8, border: `1px solid ${alpha(T.border, 0.6)}`, background: T.cardHi, padding: '12px 16px', fontSize: 13, lineHeight: 1.6, color: T.mutedHi }}>
           <span style={{ fontWeight: 600, color: T.text }}>The proposal: </span>
-          {usdm(deal.ticketUSDm)} {deal.instrument.toLowerCase()} for ~{ownership.toFixed(1)}% of {deal.name} at a {usdm(deal.ask.askValuationUSDm)} {deal.ask.series ? `${deal.ask.series.toLowerCase()} ` : ''}mark
+          {usdm(deal.ticketUSDm)} {deal.instrument.toLowerCase()} for ~{pctSmart(ownership)} of {deal.name} at a {usdm(deal.ask.askValuationUSDm)} {deal.ask.series ? `${deal.ask.series.toLowerCase()} ` : ''}mark
           {deal.totalRaisedUSDm ? `; the company has raised ${usdm(deal.totalRaisedUSDm)} to date` : ''}. {n.icThesis}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>

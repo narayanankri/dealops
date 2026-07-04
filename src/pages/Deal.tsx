@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useApp } from '@/lib/store'
+import { useApp, IC_RECOMMENDATIONS, type IcRecommendation } from '@/lib/store'
 import { ActionsMenu, Button, Card, ConfidenceRing, StatusPill } from '@/components/ui'
 import { usdm } from '@/lib/format'
 import { cn } from '@/lib/cn'
@@ -86,6 +86,7 @@ function DealHeader({ deal, a }: { deal: Deal; a: Analysis }) {
   const { setStatus, reRun } = useApp()
   const navigate = useNavigate()
   const [rerunning, setRerunning] = useState(false)
+  const [icOpen, setIcOpen] = useState(false)
   const handleRerun = () => {
     setRerunning(true)
     reRun(deal.id)
@@ -123,8 +124,7 @@ function DealHeader({ deal, a }: { deal: Deal; a: Analysis }) {
                 title={a.integrity.blocking ? 'Resolve the blocking coherence issues first' : undefined}
                 onClick={() => {
                   if (a.integrity.blocking) return
-                  setStatus(deal.id, 'sent-to-ic')
-                  navigate('/ic-queue')
+                  setIcOpen(true)
                 }}
               >
                 Send to IC
@@ -152,7 +152,60 @@ function DealHeader({ deal, a }: { deal: Deal; a: Analysis }) {
         <Metric label="Standalone merit" score={a.meritScore} />
         <Metric label="Data trust" score={a.dataTrustScore} />
       </div>
+      {icOpen && (
+        <SendToIcModal
+          deal={deal}
+          a={a}
+          onClose={() => setIcOpen(false)}
+          onDone={() => { setIcOpen(false); navigate('/ic-queue') }}
+        />
+      )}
     </Card>
+  )
+}
+
+// Default the recommendation to the engine's read; the analyst can override.
+const verdictToRec = (v: Analysis['verdict']): IcRecommendation => (v === 'proceed' ? 'proceed' : v === 'review' ? 'proceed-conditions' : 'pass')
+
+function SendToIcModal({ deal, a, onClose, onDone }: { deal: Deal; a: Analysis; onClose: () => void; onDone: () => void }) {
+  const { sendToIc } = useApp()
+  const [rec, setRec] = useState<IcRecommendation>(verdictToRec(a.verdict))
+  const [notes, setNotes] = useState('')
+  return (
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/55 p-4" onClick={onClose}>
+      <div className="w-full max-w-lg rounded-xl border border-line bg-panel p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="text-[11px] font-medium tracking-wide text-ink-3 uppercase">Send to Investment Committee</div>
+        <h2 className="mt-1 text-lg font-semibold tracking-tight text-ink">{deal.name}</h2>
+        <p className="mt-1 text-sm text-ink-3">Record your recommendation and notes for the committee. They appear in the IC Queue.</p>
+
+        <label className="mt-5 block text-[11px] font-medium tracking-wide text-ink-3 uppercase">Recommendation</label>
+        <select
+          value={rec}
+          onChange={(e) => setRec(e.target.value as IcRecommendation)}
+          className="mt-1.5 w-full rounded-lg border border-line bg-panel-2 px-3 py-2.5 text-sm text-ink outline-none focus:border-accent"
+        >
+          {IC_RECOMMENDATIONS.map((r) => (
+            <option key={r.value} value={r.value}>{r.label}</option>
+          ))}
+        </select>
+
+        <label className="mt-4 block text-[11px] font-medium tracking-wide text-ink-3 uppercase">Notes to committee</label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={5}
+          placeholder="Your rationale, conditions to clear, and anything the committee should weigh…"
+          className="mt-1.5 w-full resize-none rounded-lg border border-line bg-panel-2 px-3 py-2.5 text-sm leading-relaxed text-ink outline-none placeholder:text-ink-3/70 focus:border-accent"
+        />
+
+        <div className="mt-5 flex items-center justify-end gap-2">
+          <Button onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={() => { sendToIc(deal.id, rec, notes.trim()); onDone() }}>
+            Send to IC →
+          </Button>
+        </div>
+      </div>
+    </div>
   )
 }
 

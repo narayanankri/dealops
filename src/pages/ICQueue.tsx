@@ -1,13 +1,15 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useApp } from '@/lib/store'
-import { ActionsMenu, Card, ScoreChip, StatusPill, Stat } from '@/components/ui'
+import { useApp, icRecommendationLabel, type IcSubmission } from '@/lib/store'
+import { ActionsMenu, Card, Pill, ScoreChip, StatusPill, Stat } from '@/components/ui'
 import { usdm } from '@/lib/format'
 import { statusActions } from '@/lib/status'
 import type { Analysis, Deal, DealStatus } from '@/types'
 
+const recTone = (r: IcSubmission['recommendation']): 'pos' | 'warn' | 'neg' | 'neutral' => (r === 'proceed' ? 'pos' : r === 'proceed-conditions' ? 'warn' : r === 'pass' ? 'neg' : 'neutral')
+
 export function ICQueue() {
-  const { deals, analysisFor, activeFundId, activeFund, setStatus } = useApp()
+  const { deals, analysisFor, activeFundId, activeFund, setStatus, icSubmissionFor } = useApp()
   const navigate = useNavigate()
 
   const queued = useMemo(
@@ -43,6 +45,7 @@ export function ICQueue() {
               key={d.id}
               deal={d}
               a={analysisFor(d)}
+              sub={icSubmissionFor(d.id)}
               onOpen={() => navigate(`/deal/${d.id}`)}
               onAction={(to) => setStatus(d.id, to)}
             />
@@ -53,7 +56,7 @@ export function ICQueue() {
   )
 }
 
-function QueueCard({ deal, a, onOpen, onAction }: { deal: Deal; a: Analysis; onOpen: () => void; onAction: (to: DealStatus) => void }) {
+function QueueCard({ deal, a, sub, onOpen, onAction }: { deal: Deal; a: Analysis; sub?: IcSubmission; onOpen: () => void; onAction: (to: DealStatus) => void }) {
   return (
     <Card className="px-6 py-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -63,6 +66,7 @@ function QueueCard({ deal, a, onOpen, onAction }: { deal: Deal; a: Analysis; onO
               {deal.name}
             </button>
             <StatusPill status={deal.status} />
+            {sub && <Pill tone={recTone(sub.recommendation)}>{icRecommendationLabel(sub.recommendation)}</Pill>}
           </div>
           <p className="mt-0.5 text-xs text-ink-3">
             {deal.sector} · {deal.geography} · {deal.stage} · Ticket {usdm(deal.ticketUSDm)}
@@ -75,6 +79,16 @@ function QueueCard({ deal, a, onOpen, onAction }: { deal: Deal; a: Analysis; onO
           <ActionsMenu actions={statusActions(deal.status).map((act) => ({ label: act.label, danger: act.danger, onClick: () => onAction(act.to) }))} />
         </div>
       </div>
+
+      {sub?.notes && (
+        <div className="mt-4 rounded-lg border-l-2 border-accent/60 bg-panel-2/60 px-4 py-3">
+          <div className="mb-1 flex items-center justify-between">
+            <div className="text-[11px] font-medium tracking-wide text-ink-3 uppercase">Analyst recommendation — {icRecommendationLabel(sub.recommendation)}</div>
+            <div className="text-[10px] text-ink-3">{new Date(sub.at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+          </div>
+          <p className="text-sm leading-relaxed text-ink-2">{sub.notes}</p>
+        </div>
+      )}
 
       {a.conditions.length > 0 && (
         <div className="mt-4 rounded-lg bg-panel-2/60 px-4 py-3">

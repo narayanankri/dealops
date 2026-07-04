@@ -10,6 +10,17 @@ export interface DealEvent {
   what: string
 }
 
+// ── IC submission — the recommendation + notes captured when a deal is sent to committee ──
+export type IcRecommendation = 'proceed' | 'proceed-conditions' | 'pass' | 'hold'
+export const IC_RECOMMENDATIONS: { value: IcRecommendation; label: string }[] = [
+  { value: 'proceed', label: 'Proceed' },
+  { value: 'proceed-conditions', label: 'Proceed with conditions' },
+  { value: 'pass', label: 'Pass' },
+  { value: 'hold', label: 'Hold for more info' },
+]
+export const icRecommendationLabel = (r: IcRecommendation) => IC_RECOMMENDATIONS.find((x) => x.value === r)?.label ?? r
+export interface IcSubmission { recommendation: IcRecommendation; notes: string; at: string }
+
 interface AppState {
   // funds
   funds: Fund[]
@@ -29,17 +40,17 @@ interface AppState {
   resetDeal: (dealId: string) => void
   // workflow
   setStatus: (dealId: string, status: DealStatus) => void
+  sendToIc: (dealId: string, recommendation: IcRecommendation, notes: string) => void
+  icSubmissionFor: (dealId: string) => IcSubmission | undefined
   reRun: (dealId: string) => void
   eventsFor: (dealId: string) => DealEvent[]
 }
 
 const Ctx = createContext<AppState | null>(null)
 
-// seed two deals into committee so the IC Queue is populated for the demo
-const seedStatus: Record<string, DealStatus> = {
-  tamara: 'sent-to-ic',
-  'property-finder': 'sent-to-ic',
-}
+// The IC Queue starts empty so the Send-to-IC flow can be demoed on any pipeline deal.
+const seedStatus: Record<string, DealStatus> = {}
+const seedSubmissions: Record<string, IcSubmission> = {}
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [funds, setFunds] = useState<Fund[]>(seedFunds)
@@ -48,6 +59,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     seedDeals.map((d) => (seedStatus[d.id] ? { ...d, status: seedStatus[d.id] } : d)),
   )
   const [events, setEvents] = useState<Record<string, DealEvent[]>>({})
+  const [icSubmissions, setIcSubmissions] = useState<Record<string, IcSubmission>>(seedSubmissions)
 
   const activeFund = useMemo(() => funds.find((f) => f.id === activeFundId) ?? funds[0], [funds, activeFundId])
 
@@ -91,6 +103,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [log],
   )
 
+  const sendToIc = useCallback(
+    (dealId: string, recommendation: IcRecommendation, notes: string) => {
+      setIcSubmissions((prev) => ({ ...prev, [dealId]: { recommendation, notes, at: new Date().toISOString() } }))
+      setDeals((prev) => prev.map((d) => (d.id === dealId ? { ...d, status: 'sent-to-ic' as DealStatus } : d)))
+      log(dealId, `Sent to IC — ${icRecommendationLabel(recommendation)}`)
+    },
+    [log],
+  )
+
   const reRun = useCallback((dealId: string) => log(dealId, 'Analysis re-run'), [log])
 
   const value = useMemo<AppState>(
@@ -109,10 +130,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateAssumptions,
       resetDeal,
       setStatus,
+      sendToIc,
+      icSubmissionFor: (id) => icSubmissions[id],
       reRun,
       eventsFor: (id) => events[id] ?? [],
     }),
-    [funds, activeFundId, activeFund, cloneActiveFund, setMandate, deals, events, updateAssumptions, resetDeal, setStatus, reRun],
+    [funds, activeFundId, activeFund, cloneActiveFund, setMandate, deals, events, icSubmissions, updateAssumptions, resetDeal, setStatus, sendToIc, reRun],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

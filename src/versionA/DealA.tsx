@@ -5,12 +5,12 @@
 // ───────────────────────────────────────────────────────────
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useApp } from '@/lib/store'
+import { useApp, IC_RECOMMENDATIONS, type IcRecommendation } from '@/lib/store'
 import { usdm } from '@/lib/format'
 import type { Analysis, Deal } from '@/types'
 import { TopBarA } from './TopBarA'
 import { T, FONT, alpha } from './theme'
-import { Card, Mono, Serif, StatusPill, VerdictBadge, Btn, RingGaugeA } from './uiA'
+import { Card, Mono, Serif, StatusPill, Btn, RingGaugeA } from './uiA'
 import { OverviewA } from './tabs/OverviewA'
 import { MandateFitA } from './tabs/MandateFitA'
 import { MeritA } from './tabs/MeritA'
@@ -36,10 +36,6 @@ type TabKey = (typeof TABS)[number]['key']
 function RecommendationStrip({ a }: { a: Analysis }) {
   return (
     <Card padding="18px 24px" style={{ marginTop: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-        <VerdictBadge verdict={a.verdict} />
-        <span style={{ fontSize: 11, color: T.muted, fontFamily: FONT.mono }}>engine read — informs, does not decide</span>
-      </div>
       <div style={{ display: 'grid', gridTemplateColumns: a.conditions.length > 0 ? '1fr 1fr' : '1fr', gap: 24 }}>
         <div>
           <Mono style={{ marginBottom: 8 }}>Key considerations</Mono>
@@ -99,9 +95,10 @@ function DealHeader({ deal, a }: { deal: Deal; a: Analysis }) {
 
 export function DealA() {
   const { id } = useParams()
-  const { getDeal, analysisFor, setStatus, reRun } = useApp()
+  const { getDeal, analysisFor, reRun } = useApp()
   const navigate = useNavigate()
   const [tab, setTab] = useState<TabKey>('overview')
+  const [icOpen, setIcOpen] = useState(false)
 
   const deal = id ? getDeal(id) : undefined
   if (!deal) {
@@ -128,8 +125,7 @@ export function DealA() {
           title={a.integrity.blocking ? 'Resolve the blocking coherence issues first' : undefined}
           onClick={() => {
             if (a.integrity.blocking) return
-            setStatus(deal.id, 'sent-to-ic')
-            navigate('/a/ic-queue')
+            setIcOpen(true)
           }}
         >
           Send to IC
@@ -187,6 +183,43 @@ export function DealA() {
           {tab === 'history' && <HistoryA deal={deal} a={a} />}
         </div>
       </div>
+      {icOpen && (
+        <SendToIcModalA deal={deal} a={a} onClose={() => setIcOpen(false)} onDone={() => { setIcOpen(false); navigate('/a/ic-queue') }} />
+      )}
     </>
+  )
+}
+
+const verdictToRecA = (v: Analysis['verdict']): IcRecommendation => (v === 'proceed' ? 'proceed' : v === 'review' ? 'proceed-conditions' : 'pass')
+
+function SendToIcModalA({ deal, a, onClose, onDone }: { deal: Deal; a: Analysis; onClose: () => void; onDone: () => void }) {
+  const { sendToIc } = useApp()
+  const [rec, setRec] = useState<IcRecommendation>(verdictToRecA(a.verdict))
+  const [notes, setNotes] = useState('')
+  const fieldStyle: React.CSSProperties = { width: '100%', marginTop: 6, padding: '10px 12px', background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, color: T.text, fontSize: 14, fontFamily: FONT.sans, outline: 'none', boxSizing: 'border-box' }
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(2,8,20,0.6)', padding: 16 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, background: T.ink, border: `1px solid ${T.border}`, borderRadius: 14, padding: 26, boxShadow: '0 24px 70px rgba(0,0,0,0.5)' }}>
+        <Mono color={T.cyan}>Send to Investment Committee</Mono>
+        <div style={{ fontFamily: FONT.serif, fontSize: 22, fontWeight: 700, letterSpacing: -0.4, marginTop: 4, color: T.text }}>{deal.name}</div>
+        <p style={{ marginTop: 4, fontSize: 13, color: T.muted }}>Record your recommendation and notes for the committee. They appear in the IC Queue.</p>
+
+        <div style={{ marginTop: 18 }}>
+          <Mono>Recommendation</Mono>
+          <select value={rec} onChange={(e) => setRec(e.target.value as IcRecommendation)} style={fieldStyle}>
+            {IC_RECOMMENDATIONS.map((r) => <option key={r.value} value={r.value} style={{ background: T.card }}>{r.label}</option>)}
+          </select>
+        </div>
+        <div style={{ marginTop: 14 }}>
+          <Mono>Notes to committee</Mono>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} placeholder="Your rationale, conditions to clear, and anything the committee should weigh…" style={{ ...fieldStyle, resize: 'none', lineHeight: 1.55 }} />
+        </div>
+
+        <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+          <Btn variant="ghost" onClick={onClose}>Cancel</Btn>
+          <Btn variant="cyan" onClick={() => { sendToIc(deal.id, rec, notes.trim()); onDone() }}>Send to IC →</Btn>
+        </div>
+      </div>
+    </div>
   )
 }

@@ -55,7 +55,7 @@ export function statusActions(s: DealStatus): StatusAction[] {
     case 'ready':
       return [{ label: 'Send to IC', to: 'sent-to-ic' }, { label: 'Reject', to: 'rejected', danger: true }, { label: 'Archive', to: 'archived' }]
     case 'sent-to-ic':
-      return [{ label: 'Reject', to: 'rejected', danger: true }, { label: 'Archive', to: 'archived' }]
+      return [{ label: 'Return to pipeline', to: 'ready' }, { label: 'Reject', to: 'rejected', danger: true }, { label: 'Archive', to: 'archived' }]
     case 'rejected':
       return [{ label: 'Reopen', to: 'ready' }, { label: 'Archive', to: 'archived' }]
     case 'archived':

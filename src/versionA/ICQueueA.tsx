@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useApp } from '@/lib/store'
+import { useApp, icRecommendationLabel, type IcSubmission } from '@/lib/store'
 import { usdm } from '@/lib/format'
 import { statusActions } from '@/lib/status'
 import type { Analysis, Deal, DealStatus } from '@/types'
@@ -8,8 +8,10 @@ import { TopBarA } from './TopBarA'
 import { T, FONT } from './theme'
 import { Card, KPI, Mono, ScoreBadge, StatusPill, VerdictBadge, Btn } from './uiA'
 
+const recColor = (r: IcSubmission['recommendation']) => (r === 'proceed' ? T.green : r === 'proceed-conditions' ? T.amber : r === 'pass' ? T.red : T.muted)
+
 export function ICQueueA() {
-  const { deals, analysisFor, activeFundId, activeFund, setStatus } = useApp()
+  const { deals, analysisFor, activeFundId, activeFund, setStatus, icSubmissionFor } = useApp()
   const navigate = useNavigate()
 
   const queued = useMemo(
@@ -46,6 +48,7 @@ export function ICQueueA() {
                 key={d.id}
                 deal={d}
                 a={analysisFor(d)}
+                sub={icSubmissionFor(d.id)}
                 onOpen={() => navigate(`/a/deal/${d.id}`)}
                 onAction={(to) => setStatus(d.id, to)}
               />
@@ -60,11 +63,13 @@ export function ICQueueA() {
 function QueueCard({
   deal,
   a,
+  sub,
   onOpen,
   onAction,
 }: {
   deal: Deal
   a: Analysis
+  sub?: IcSubmission
   onOpen: () => void
   onAction: (to: DealStatus) => void
 }) {
@@ -87,6 +92,11 @@ function QueueCard({
             </button>
             <StatusPill status={deal.status} />
             <VerdictBadge verdict={a.verdict} />
+            {sub && (
+              <span style={{ fontFamily: FONT.mono, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: recColor(sub.recommendation), border: `1px solid ${recColor(sub.recommendation)}`, borderRadius: 999, padding: '2px 9px' }}>
+                {icRecommendationLabel(sub.recommendation)}
+              </span>
+            )}
           </div>
           <div style={{ marginTop: 6, fontSize: 11, color: T.muted, fontFamily: FONT.mono, letterSpacing: 0.3 }}>
             {deal.sector} · {deal.geography} · {deal.stage} · Ticket {usdm(deal.ticketUSDm)}
@@ -99,6 +109,16 @@ function QueueCard({
           <MiniScore label="Merit" v={a.meritScore} />
         </div>
       </div>
+
+      {sub?.notes && (
+        <div style={{ marginTop: 16, background: T.cardHi, borderLeft: `2px solid ${T.cyan}`, border: `1px solid ${T.border}`, borderRadius: 8, padding: '14px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
+            <Mono color={T.cyan}>Analyst recommendation — {icRecommendationLabel(sub.recommendation)}</Mono>
+            <span style={{ fontSize: 10, color: T.muted, fontFamily: FONT.mono }}>{new Date(sub.at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+          </div>
+          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: T.mutedHi }}>{sub.notes}</p>
+        </div>
+      )}
 
       {a.conditions.length > 0 && (
         <div style={{ marginTop: 16, background: T.cardHi, border: `1px solid ${T.border}`, borderRadius: 8, padding: '14px 16px' }}>
