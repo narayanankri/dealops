@@ -310,7 +310,7 @@ export const luluRetail: Deal = {
     scenarioNarratives: {
       bear: 'A GCC price war and soft consumption push EBITDA margin below 9.5% and revenue growth toward flat; the market keeps the stock at an EM-grocer multiple (~4–4.5x, Lenta-like). The position is roughly flat-to-down on price, with the dividend providing a modest cushion — a sub-hurdle outcome.',
       base: 'Lulu holds ~10% EBITDA margin and grows revenue ~4% on the store rollout and private-label mix; the market re-rates partway toward regional staples peers (~6–7x EV/EBITDA) as the post-IPO overhang clears. Combined with ~3% dividend yield this clears the hurdle on a 5-year hold.',
-      bull: 'Margin recovers toward 10.5%+ on private-label and e-commerce scale, growth holds at the top of guidance, and a strategic consolidation (MAF/regional roll-up) or full re-rating to peer multiples (~9x) drives a step-change — a strong IRR well above hurdle, consistent with the model-DCF upside.',
+      bull: 'Margin recovers toward 10.5%+ on private-label and e-commerce scale, growth holds at the top of guidance, and a strategic consolidation (MAF/regional roll-up) or full re-rating to peer multiples (~9x) drives a step-change — an IRR well above hurdle, consistent with the model-DCF upside.',
     },
     thesisDrivers: [
       'Multiple re-rating: entry at ~4.2x EV/EBITDA vs regional staples at ~10–11x (Almarai, Spinneys). Even a partial close to ~7x on a flat-to-modestly-growing EBITDA base is the primary return engine.',

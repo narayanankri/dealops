@@ -183,7 +183,7 @@ export const lean: Deal = {
       { name: 'Aditya Sarkar', role: 'Co-founder' },
       { name: 'Ashu Gupta', role: 'Co-founder' },
     ],
-    leadershipGaps: 'Strong, intact founding team with top-tier backing. The diligence bench questions are a CFO/commercial-finance hire able to stand behind audited revenue/ARR, and depth in regulated-payments compliance now that Lean holds a full SAMA payment-institution licence.',
+    leadershipGaps: 'Intact founding team with top-tier backing. The diligence bench questions are a CFO/commercial-finance hire able to stand behind audited revenue/ARR, and depth in regulated-payments compliance now that Lean holds a full SAMA payment-institution licence.',
     legalStanding: 'No adverse media. Regulated: ADGM (UAE), SAMA Major Payment Institution open-banking licence (KSA, Mar 2026), UAE Open Finance IPA (Jul 2025). Institutional cap table. The live obligation is ongoing SAMA/CBUAE supervision that comes with the licences.',
     valuationVerdict:
       'A materially strengthened infrastructure thesis — the SAMA licence is a real, dated moat — wrapped in extreme financial opacity. Modelled returns clear the hurdle, but every input that matters (revenue, take-rate, margin, NRR, and the valuation itself) is estimated or undisclosed. The illustrative financials must not be mistaken for disclosure. The franchise quality is plausible, but the price and the numbers cannot yet be stood behind.',

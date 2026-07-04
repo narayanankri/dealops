@@ -196,7 +196,7 @@ export const khazna: Deal = {
       { name: 'G42', role: 'Majority shareholder', note: 'Abu Dhabi AI group; provides anchor demand (Stargate) and strategic direction' },
       { name: 'Silver Lake & MGX', role: 'Minority shareholders', note: 'Joined via the Feb-2025 e& exit; Silver Lake is also a G42 investor' },
     ],
-    leadershipGaps: 'Strong sponsor and operating team; the diligence gap is governance access for a new minority — board/observer rights and audited financial reporting are not evident for an outside growth investor entering at $5.5bn.',
+    leadershipGaps: 'Established sponsor and operating team; the diligence gap is governance access for a new minority — board/observer rights and audited financial reporting are not evident for an outside growth investor entering at $5.5bn.',
     legalStanding: 'No adverse media or sanctions findings against Khazna; regulated critical-infrastructure entity. The watch item is geopolitical: G42’s US-tech links (Nvidia/OpenAI/Oracle via Stargate) sit inside the UAE–US AI framework and carry export-control sensitivity.',
     valuationVerdict:
       'A best-in-class infrastructure asset — but priced as one, off a secondary print. A 22%-hurdle growth-equity minority cannot reach the hurdle at $5.5bn, and there is no open primary to invest in; the same asset would clear an infrastructure fund’s lower hurdle. Compounding it, the economics that would justify any number — revenue, EBITDA, utilisation, backlog — are undisclosed. This is a strategy/price and access problem, not a quality problem.',

@@ -157,7 +157,7 @@ export const tarabut: Deal = {
       { name: 'Abdulla Almoayed', role: 'Founder & CEO', note: 'Bahraini founder; led the Vyne cross-border acquisition' },
       { name: 'Investor syndicate', role: 'Pinnacle Capital, Tiger Global, Visa, Aljazira Capital' },
     ],
-    leadershipGaps: 'Founder-led with a strong syndicate; the open questions are commercial — a disclosed monetisation model and a CFO-grade ARR/take-rate reporting line — which only matter once the company reaches the mandate stage.',
+    leadershipGaps: 'Founder-led with an investor syndicate; the open questions are commercial — a disclosed monetisation model and a CFO-grade ARR/take-rate reporting line — which only matter once the company reaches the mandate stage.',
     legalStanding: 'No adverse media or sanctions exposure; regulated within Bahrain’s open-banking regime and SAMA’s KSA framework. The Vyne acquisition cleared SAMA and the UK FCA.',
     valuationVerdict: 'Not assessable — no valuation has ever been disclosed and there has been no priced round since May 2023. In any case the deal is excluded at the gate on stage before valuation matters; any number shown is a nominal engine placeholder, not a mark.',
     limitations: [

@@ -109,11 +109,11 @@ export const floward: Deal = {
     holdYears: 4,
   },
   merit: [
-    { key: 'market', label: 'Market opportunity', score: 68, confidence: 'medium', rationale: 'Real GCC occasions/gifting demand — the broader Middle East floral-gifting market is ~$1.5bn (2025, third-party). Solid, premiumising, but an occasion-driven category with modest natural frequency, not an explosive one.' },
+    { key: 'market', label: 'Market opportunity', score: 68, confidence: 'medium', rationale: 'Real GCC occasions/gifting demand — the broader Middle East floral-gifting market is ~$1.5bn (2025, third-party). Established, premiumising, but an occasion-driven category with modest natural frequency, not an explosive one.' },
     { key: 'model', label: 'Business model', score: 64, confidence: 'medium', rationale: 'Vertically-integrated flowers/gifting with owned same-day last-mile and a perfumery (Mubkhar) bolt-on. Structurally thin: high-spoilage perishables (10-day shelf life) against fixed fulfilment cost. The GaaS/corporate-gifting pivot is the margin lever, but it is unproven and unquantified.' },
-    { key: 'financial', label: 'Financial profile', score: 50, confidence: 'low', rationale: 'Reached real scale once (50m stems, 2022) and claimed strong COVID-era growth (2020–21) — but NO current revenue, GMV, margin or trajectory is disclosed, and the company has been profitable per management claims that cannot be verified.', confidenceReason: 'Every current operating figure is undisclosed; the newest hard datum is from 2022 and the newest growth datum from 2021.' },
+    { key: 'financial', label: 'Financial profile', score: 50, confidence: 'low', rationale: 'Reached real scale once (50m stems, 2022) and claimed COVID-era growth (2020–21) — but NO current revenue, GMV, margin or trajectory is disclosed, and the company has been profitable per management claims that cannot be verified.', confidenceReason: 'Every current operating figure is undisclosed; the newest hard datum is from 2022 and the newest growth datum from 2021.' },
     { key: 'moat', label: 'Competitive moat', score: 58, confidence: 'medium', rationale: 'Brand and a built same-day network across 36 cities give a real head-start in occasions, but flowers/gifting has low switching costs and easy local substitution; the moat is execution and brand, not lock-in.' },
-    { key: 'team', label: 'Team', score: 74, confidence: 'medium', rationale: 'Founder-led by Abdulaziz Al Loughani (ex-investor/operator) and co-founder Mohammed Al Arifi; strong regional cap table (STV, Aljazira, Impact46).' },
+    { key: 'team', label: 'Team', score: 74, confidence: 'medium', rationale: 'Founder-led by Abdulaziz Al Loughani (ex-investor/operator) and co-founder Mohammed Al Arifi; regional cap table (STV, Aljazira, Impact46).' },
     { key: 'valuation', label: 'Valuation', score: 48, confidence: 'low', rationale: 'No disclosed mark. The $700m ask is anchored to a ~3.8x-since-Series-B "approaching unicorn" claim from Feb-2023 — a >3-year-stale, never-confirmed number, on a thin-margin model.' },
     { key: 'exit', label: 'Exit pathway', score: 60, confidence: 'low', rationale: 'A Saudi IPO is the stated route (Goldman/HSBC engaged), but it has slipped >2 years past the "2024" target with no relisting signal; consumer-ecommerce listing multiples are modest regardless.' },
   ],
@@ -171,7 +171,7 @@ export const floward: Deal = {
     caseFor: [
       'Established regional brand leadership with a built, owned same-day network across 36 cities — 50m stems delivered in 2022 and 400+ brand partners demonstrate real operating scale, not a deck.',
       'A real, premiumising category (~$1.5bn ME floral-gifting, 2025) plus an asset-light margin lever in B2B corporate gifting / GaaS and the higher-margin gifts/perfumery mix.',
-      'Founder-led with a strong regional cap table (STV, Aljazira, Impact46) and a stated Saudi-IPO path with bulge-bracket advisers engaged.',
+      'Founder-led with a regional cap table (STV, Aljazira, Impact46) and a stated Saudi-IPO path with bulge-bracket advisers engaged.',
     ],
     caseAgainst: [
       'Stale capital and a slipped IPO: the last round was Feb-2023 (>3 years ago) and the Goldman/HSBC-advised listing targeted for "as soon as 2024" has not happened by mid-2026 — the clearest signal that something (growth, margin, or market window) is not where it needs to be.',
@@ -182,7 +182,7 @@ export const floward: Deal = {
       { name: 'Abdulaziz Al Loughani', role: 'Co-founder & CEO', note: 'Kuwaiti operator/investor; long regional e-commerce track record' },
       { name: 'Mohammed Al Arifi', role: 'Co-founder' },
     ],
-    leadershipGaps: 'Founder-led with strong backing; the binding gap is not the team but disclosure — for a company "pre-IPO" since 2023, the absence of any audited revenue, margin or growth figure is the diligence wall.',
+    leadershipGaps: 'Founder-led with institutional backing; the binding gap is not the team but disclosure — for a company "pre-IPO" since 2023, the absence of any audited revenue, margin or growth figure is the diligence wall.',
     legalStanding: 'No adverse media or sanctions exposure; conventional consumer-commerce entity. The open item is corporate-readiness for a Tadawul listing (governance, audited accounts), which has not surfaced publicly.',
     valuationVerdict:
       'A sound operating business — but priced off a >3-year-stale, never-disclosed "approaching unicorn" mark, with every current vital undisclosed and an IPO that has slipped two years. Even granting the illustrative ~$120m revenue, $700m is ~5.8x EV/revenue — above every listed comp (Talabat ~4.5x at the top) on a thinner-margin model — and no scenario clears the 22% hurdle. A "good company, stale data, wrong price" case.',
