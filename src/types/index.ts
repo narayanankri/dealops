@@ -28,7 +28,7 @@ export interface Mandate {
   controlPosture: ControlPosture
   leverage: boolean
   holdYears: [number, number]
-  targetSectors: { name: string; priority?: boolean }[]
+  targetSectors: { name: string; priority?: boolean; weight?: number }[] // weight 0–100: relative mandate emphasis
   coreGeographies: string[]
   flaggedGeographies: string[] // allowed, extra screening
   excludedGeographies: string[] // red line

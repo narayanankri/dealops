@@ -3,6 +3,7 @@ import { useApp } from '@/lib/store'
 import { seedFunds } from '@/data/funds'
 import { analyze } from '@/engine'
 import { usdm } from '@/lib/format'
+import { reallocateWeights } from '@/lib/weights'
 import type { Mandate, StrategyArchetype } from '@/types'
 import { TopBarA } from './TopBarA'
 import { T, FONT, alpha, scoreColor } from './theme'
@@ -120,7 +121,7 @@ export function MandateA() {
             <Card padding="20px 22px">
               <SectionTitle kicker="Economics" title="Return & ticket" />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                <Slider label="Return hurdle (gross IRR)" value={mandate.returnHurdlePct} unit="%" min={5} max={40} step={1} onChange={(v) => set({ returnHurdlePct: v })} hint="Every deal's IRR is judged against this." />
+                <Slider label="Return hurdle (gross IRR)" value={mandate.returnHurdlePct} unit="%" min={5} max={40} step={1} onChange={(v) => set({ returnHurdlePct: v })} hint="Every deal's IRR is assessed against this." />
                 <Slider label="Public-markets reference" value={mandate.publicReferencePct} unit="%" min={5} max={30} step={1} onChange={(v) => set({ publicReferencePct: v })} />
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <Slider label="Ticket — min" value={mandate.ticketBandUSDm[0]} unit="m" min={5} max={100} step={5} fmt={usdm} onChange={(v) => set({ ticketBandUSDm: [v, mandate.ticketBandUSDm[1]] })} />
@@ -131,7 +132,7 @@ export function MandateA() {
             </Card>
 
             <Card padding="20px 22px">
-              <SectionTitle kicker="Priority sectors carry a ★" title="Target sectors" />
+              <SectionTitle kicker="% mandate weight · sums to 100" title="Target sectors" />
               <SectorEditor sectors={mandate.targetSectors} onChange={(targetSectors) => set({ targetSectors })} />
             </Card>
 
@@ -327,38 +328,57 @@ function ChipGroup({
 
 function SectorEditor({ sectors, onChange }: { sectors: Mandate['targetSectors']; onChange: (s: Mandate['targetSectors']) => void }) {
   const [v, setV] = useState('')
+  // Weights are % shares summing to 100; the last sector always auto-fills the remainder.
+  const normalize = (arr: Mandate['targetSectors']): Mandate['targetSectors'] => {
+    if (!arr.length) return arr
+    const li = arr.length - 1
+    const others = arr.reduce((s, x, j) => (j === li ? s : s + Math.round(x.weight ?? 0)), 0)
+    return arr.map((x, j) => ({ ...x, weight: j === li ? Math.max(0, 100 - others) : Math.round(x.weight ?? 0) }))
+  }
+  const rows = normalize(sectors)
+  const lastIdx = rows.length - 1
   const add = () => {
     const t = v.trim()
-    if (t && !sectors.some((s) => s.name === t)) onChange([...sectors, { name: t }])
+    if (t && !sectors.some((s) => s.name === t)) onChange(normalize([...sectors, { name: t, weight: 0 }]))
     setV('')
   }
+  const setShare = (i: number, val: number) => {
+    if (i === lastIdx) return
+    const next = reallocateWeights(rows.map((x) => x.weight ?? 0), lastIdx, i, val)
+    onChange(rows.map((x, j) => ({ ...x, weight: next[j] })))
+  }
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
-      {sectors.map((s) => {
-        const tone = s.priority ? T.cyan : T.mutedHi
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {rows.map((s, i) => {
+        const auto = i === lastIdx
         return (
-          <span key={s.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 9px', borderRadius: 4, fontSize: 12, fontWeight: 500, fontFamily: FONT.sans, background: s.priority ? alpha(T.cyan, 0.13) : T.cardHi, color: tone, border: `1px solid ${s.priority ? alpha(T.cyan, 0.33) : T.border}` }}>
-            <button
-              onClick={() => onChange(sectors.map((x) => (x.name === s.name ? { ...x, priority: !x.priority } : x)))}
-              title="Toggle priority"
-              style={{ background: 'transparent', border: 'none', color: s.priority ? T.cyan : T.muted, fontSize: 12, lineHeight: 1, cursor: 'pointer', padding: 0 }}
-            >
-              {s.priority ? '★' : '☆'}
-            </button>
-            {s.name}
-            <button onClick={() => onChange(sectors.filter((x) => x.name !== s.name))} style={{ background: 'transparent', border: 'none', color: tone, fontSize: 12, lineHeight: 1, cursor: 'pointer', opacity: 0.7, padding: 0 }}>×</button>
-          </span>
+          <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', background: T.cardHi, border: `1px solid ${T.border}`, borderRadius: 8 }}>
+            <span style={{ width: 150, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: T.text, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+              {s.name}
+              {auto && <span style={{ fontFamily: FONT.mono, fontSize: 8, letterSpacing: 0.5, textTransform: 'uppercase', color: T.muted, background: T.card, borderRadius: 3, padding: '1px 4px' }}>auto</span>}
+            </span>
+            <input
+              type="range" min={0} max={100} step={1} value={s.weight} disabled={auto}
+              onChange={(e) => setShare(i, parseInt(e.target.value, 10))}
+              style={{ flex: 1, minWidth: 0, accentColor: T.cyan, opacity: auto ? 0.4 : 1 }}
+            />
+            <span style={{ width: 44, flexShrink: 0, textAlign: 'right', fontFamily: FONT.mono, fontSize: 12, color: T.mutedHi }}>{s.weight}%</span>
+            <button onClick={() => onChange(normalize(sectors.filter((x) => x.name !== s.name)))} title="Remove" style={{ background: 'transparent', border: 'none', color: T.muted, fontSize: 14, lineHeight: 1, cursor: 'pointer', padding: 0, flexShrink: 0 }}>×</button>
+          </div>
         )
       })}
-      <input
-        value={v}
-        onChange={(e) => setV(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') add() }}
-        placeholder="+ add"
-        style={{ width: 84, background: T.cardHi, color: T.text, border: `1px solid ${T.border}`, borderRadius: 4, padding: '4px 8px', fontSize: 12, fontFamily: FONT.sans, outline: 'none' }}
-        onFocus={(e) => { e.currentTarget.style.borderColor = T.cyan }}
-        onBlur={(e) => { e.currentTarget.style.borderColor = T.border }}
-      />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 2 }}>
+        <input
+          value={v}
+          onChange={(e) => setV(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') add() }}
+          placeholder="+ add a sector"
+          style={{ width: 170, background: T.cardHi, color: T.text, border: `1px solid ${T.border}`, borderRadius: 6, padding: '7px 10px', fontSize: 12, fontFamily: FONT.sans, outline: 'none' }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = T.cyan }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = T.border }}
+        />
+        <span style={{ fontSize: 11, color: T.muted }}>Shares sum to 100% — the last sector auto-fills the remainder. Higher share, higher sector-fit score.</span>
+      </div>
     </div>
   )
 }

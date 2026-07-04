@@ -5,6 +5,7 @@ import { analyze } from '@/engine'
 import { Button, Card, SectionTitle, Stat } from '@/components/ui'
 import { usdm } from '@/lib/format'
 import { cn } from '@/lib/cn'
+import { reallocateWeights } from '@/lib/weights'
 import type { Mandate, StrategyArchetype } from '@/types'
 
 export function MandatePage() {
@@ -104,7 +105,7 @@ export function MandatePage() {
           <Card className="px-6 py-5">
             <SectionTitle>Return & ticket</SectionTitle>
             <div className="space-y-5">
-              <Slider label="Return hurdle (gross IRR)" value={mandate.returnHurdlePct} unit="%" min={5} max={40} step={1} onChange={(v) => set({ returnHurdlePct: v })} hint="Every deal’s IRR is judged against this." />
+              <Slider label="Return hurdle (gross IRR)" value={mandate.returnHurdlePct} unit="%" min={5} max={40} step={1} onChange={(v) => set({ returnHurdlePct: v })} hint="Every deal’s IRR is assessed against this." />
               <Slider label="Public-markets reference" value={mandate.publicReferencePct} unit="%" min={5} max={30} step={1} onChange={(v) => set({ publicReferencePct: v })} />
               <div className="grid grid-cols-2 gap-4">
                 <Slider label="Ticket — min" value={mandate.ticketBandUSDm[0]} unit="m" min={5} max={100} step={5} fmt={usdm} onChange={(v) => set({ ticketBandUSDm: [v, mandate.ticketBandUSDm[1]] })} />
@@ -115,7 +116,7 @@ export function MandatePage() {
           </Card>
 
           <Card className="px-6 py-5">
-            <SectionTitle hint="priority sectors carry a ★">Target sectors</SectionTitle>
+            <SectionTitle hint="% mandate weight · sums to 100">Target sectors</SectionTitle>
             <SectorEditor
               sectors={mandate.targetSectors}
               onChange={(targetSectors) => set({ targetSectors })}
@@ -311,31 +312,55 @@ function ChipGroup({
 
 function SectorEditor({ sectors, onChange }: { sectors: Mandate['targetSectors']; onChange: (s: Mandate['targetSectors']) => void }) {
   const [v, setV] = useState('')
+  // Weights are % shares summing to 100; the last sector always auto-fills the remainder.
+  const normalize = (arr: Mandate['targetSectors']): Mandate['targetSectors'] => {
+    if (!arr.length) return arr
+    const li = arr.length - 1
+    const others = arr.reduce((s, x, j) => (j === li ? s : s + Math.round(x.weight ?? 0)), 0)
+    return arr.map((x, j) => ({ ...x, weight: j === li ? Math.max(0, 100 - others) : Math.round(x.weight ?? 0) }))
+  }
+  const rows = normalize(sectors)
+  const lastIdx = rows.length - 1
   const add = () => {
     const t = v.trim()
-    if (t && !sectors.some((s) => s.name === t)) onChange([...sectors, { name: t }])
+    if (t && !sectors.some((s) => s.name === t)) onChange(normalize([...sectors, { name: t, weight: 0 }]))
     setV('')
   }
+  const setShare = (i: number, val: number) => {
+    if (i === lastIdx) return
+    const next = reallocateWeights(rows.map((x) => x.weight ?? 0), lastIdx, i, val)
+    onChange(rows.map((x, j) => ({ ...x, weight: next[j] })))
+  }
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      {sectors.map((s) => (
-        <span key={s.name} className={cn('inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium', s.priority ? 'bg-accent-bg text-accent-2' : 'bg-panel-3 text-ink-2')}>
-          <button onClick={() => onChange(sectors.map((x) => (x.name === s.name ? { ...x, priority: !x.priority } : x)))} title="Toggle priority">
-            {s.priority ? '★' : '☆'}
-          </button>
-          {s.name}
-          <button onClick={() => onChange(sectors.filter((x) => x.name !== s.name))} className="opacity-60 hover:opacity-100">
-            ×
-          </button>
-        </span>
-      ))}
-      <input
-        value={v}
-        onChange={(e) => setV(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && add()}
-        placeholder="+ add"
-        className="w-20 rounded-md border border-line bg-panel-2 px-2 py-1 text-xs text-ink outline-none focus:border-accent focus:w-32"
-      />
+    <div className="space-y-2">
+      {rows.map((s, i) => {
+        const auto = i === lastIdx
+        return (
+          <div key={s.name} className="flex items-center gap-3 rounded-lg border border-line-soft bg-panel-2/60 px-3 py-2">
+            <span className="flex w-40 shrink-0 items-center gap-1.5 truncate text-sm font-medium text-ink">
+              {s.name}
+              {auto && <span className="rounded bg-panel-3 px-1 py-0.5 font-mono text-[8px] tracking-wide text-ink-3 uppercase">auto</span>}
+            </span>
+            <input
+              type="range" min={0} max={100} step={1} value={s.weight} disabled={auto}
+              onChange={(e) => setShare(i, parseInt(e.target.value, 10))}
+              className={cn('min-w-0 flex-1 accent-accent', auto && 'opacity-40')}
+            />
+            <span className="w-12 shrink-0 text-right font-mono text-xs text-ink-2">{s.weight}%</span>
+            <button onClick={() => onChange(normalize(sectors.filter((x) => x.name !== s.name)))} className="shrink-0 text-ink-3 opacity-70 hover:text-neg hover:opacity-100" title="Remove">×</button>
+          </div>
+        )
+      })}
+      <div className="flex items-center gap-2 pt-1">
+        <input
+          value={v}
+          onChange={(e) => setV(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && add()}
+          placeholder="+ add a sector"
+          className="w-44 rounded-md border border-line bg-panel-2 px-2.5 py-1.5 text-xs text-ink outline-none focus:border-accent"
+        />
+        <span className="text-[11px] text-ink-3">Shares sum to 100% — the last sector auto-fills the remainder. Higher share, higher sector-fit score.</span>
+      </div>
     </div>
   )
 }

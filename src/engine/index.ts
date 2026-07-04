@@ -185,9 +185,16 @@ export function returns(d: Deal, m: Mandate): Returns {
 // ── Mandate fit gate — PRD §7.2 ──
 function matchSector(deal: Deal, m: Mandate) {
   const hit = m.targetSectors.find((s) => deal.sector.toLowerCase().includes(s.name.toLowerCase()) || s.name.toLowerCase().includes(deal.sector.toLowerCase()))
-  if (hit?.priority) return { score: 100, status: 'pass' as const, takeaway: `Priority sector (${hit.name})` }
-  if (hit) return { score: 85, status: 'pass' as const, takeaway: `In-mandate sector (${hit.name})` }
-  return { score: 30, status: 'soft' as const, takeaway: `${deal.sector} is outside target sectors` }
+  if (!hit) return { score: 30, status: 'soft' as const, takeaway: `${deal.sector} is outside target sectors` }
+  // Per-sector weight is a % share of mandate emphasis; score relative to the top-weighted
+  // sector so the most-emphasised sector scores 100 and the rest scale down.
+  if (hit.weight != null) {
+    const maxShare = Math.max(1, ...m.targetSectors.map((s) => s.weight ?? 0))
+    const score = Math.max(55, Math.min(100, Math.round(55 + (hit.weight / maxShare) * 45)))
+    return { score, status: 'pass' as const, takeaway: `In-mandate sector (${hit.name}) · ${hit.weight}% mandate weight` }
+  }
+  if (hit.priority) return { score: 100, status: 'pass' as const, takeaway: `Priority sector (${hit.name})` }
+  return { score: 85, status: 'pass' as const, takeaway: `In-mandate sector (${hit.name})` }
 }
 
 export function mandateFit(d: Deal, m: Mandate, ret: Returns): MandateFit {
@@ -330,7 +337,7 @@ function mandateNarrative(
 // ── Merit (authored dims aggregated) — PRD §7.3 ──
 export function meritScore(d: Deal): { score: number; label: string } {
   const score = round(mean(d.merit.map((x) => x.score)))
-  const label = score >= 80 ? 'Strong' : score >= 65 ? 'Solid' : score >= 50 ? 'Moderate' : 'Weak'
+  const label = score >= 80 ? 'High' : score >= 65 ? 'Moderate-high' : score >= 50 ? 'Moderate' : 'Low'
   return { score, label }
 }
 
