@@ -8,7 +8,7 @@ import { ICQueue } from '@/pages/ICQueue'
 import { MandatePage } from '@/pages/Mandate'
 import { AddDeal } from '@/pages/AddDeal'
 import { Landing } from '@/pages/Landing'
-import { Boot } from '@/components/Boot'
+import { BootSequence } from '@/components/BootSequence'
 // Neutral entry + Version A — the "KPMG editorial" facelift.
 import { Chooser } from '@/pages/Chooser'
 import { AppShellA } from '@/versionA/AppShellA'
@@ -42,7 +42,7 @@ export default function App() {
       return null
     }
   })
-  // booting is the Version B calibration splash — only right after a fresh sign-in.
+  // booting shows the sign-in boot sequence, right after a fresh sign-in (both skins).
   const [booting, setBooting] = useState(false)
 
   const persistVersion = (v: Version) => {
@@ -90,7 +90,17 @@ export default function App() {
     if (version === 'b' && pathname.startsWith('/a')) navigate('/', { replace: true })
   }, [version, pathname, navigate])
 
+  // On every route change, reset the scroll position so a newly opened page
+  // (e.g. a deal opened from the pipeline) starts at the top.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    document.querySelectorAll('[data-scroll-root]').forEach((el) => { (el as HTMLElement).scrollTop = 0 })
+  }, [pathname])
+
   if (version === null) return <Chooser onPick={choose} />
+
+  // Boot sequence right after sign-in (both skins)
+  if (authed && booting) return <BootSequence onDone={() => setBooting(false)} />
 
   const toggle = authed ? <VersionToggle version={version} onClick={switchVersion} onChooser={toChooser} /> : null
 
@@ -106,6 +116,7 @@ export default function App() {
               /* ignore */
             }
             setAuthed(true)
+            setBooting(true)
           }}
         />
       )
@@ -143,7 +154,6 @@ export default function App() {
       />
     )
   }
-  if (booting) return <Boot onDone={() => setBooting(false)} />
   return (
     <>
       <AppShell>
@@ -176,9 +186,9 @@ function VersionToggle({ version, onClick, onChooser }: { version: Version; onCl
       <button onClick={onChooser} title="Back to the version selector" style={{ ...base, borderRadius: 999 }}>
         ⊞ Selector
       </button>
-      <button onClick={onClick} title={toA ? 'Switch to Version A (KPMG facelift)' : 'Switch to Version B (Instrument)'} style={{ ...base, borderRadius: 999 }}>
+      <button onClick={onClick} title={toA ? 'Switch to the Editorial view' : 'Switch to the Instrument view'} style={{ ...base, borderRadius: 999 }}>
         <span style={{ width: 7, height: 7, borderRadius: 4, background: accent, boxShadow: `0 0 8px ${accent}` }} />
-        {toA ? 'B → A' : 'A → B'}
+        {toA ? '→ Editorial' : '→ Instrument'}
       </button>
     </div>
   )
