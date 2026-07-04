@@ -2,6 +2,7 @@
 // Version A — Standalone Merit tab. Mirrors Version B's MeritTab,
 // re-skinned. Uses the RadarA spider for the merit summary.
 // ───────────────────────────────────────────────────────────
+import { useState } from 'react'
 import { T, FONT, alpha, scoreColor } from '../theme'
 import { Card, Mono, SectionTitle, ScoreBadge, RadarA, type RadarDatumA } from '../uiA'
 import type { Analysis, CapTableRow, Deal } from '@/types'
@@ -47,13 +48,45 @@ function CapTable({ rows }: { rows: CapTableRow[] }) {
   )
 }
 
+// Collapsible merit dimension — header is always visible; the rationale expands on click.
+function MeritRowA({ m, first }: { m: Deal['merit'][number]; first: boolean }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div style={{ padding: '12px 0', borderTop: first ? 'none' : `1px solid ${alpha(T.border, 0.6)}` }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{ all: 'unset', cursor: 'pointer', display: 'flex', width: '100%', alignItems: 'center', gap: 10, boxSizing: 'border-box' }}
+      >
+        <ScoreBadge score={m.score} size="sm" />
+        <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{m.label}</span>
+        <Mono color={confColor[m.confidence]} style={{ marginLeft: 'auto' }}>{m.confidence} data trust</Mono>
+        <span style={{ color: T.muted, fontSize: 15, lineHeight: 1, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>›</span>
+      </button>
+      {open && (
+        <>
+          <p style={{ margin: '6px 0 0', fontSize: 13, lineHeight: 1.55, color: T.mutedHi }}>{m.rationale}</p>
+          {m.confidenceReason && (
+            <p style={{ marginTop: 6, display: 'flex', gap: 6, fontSize: 11, lineHeight: 1.5, color: T.muted }}>
+              <span style={{ marginTop: 6, height: 4, width: 4, flexShrink: 0, borderRadius: '50%', background: T.amber }} />
+              <span>
+                <span style={{ fontWeight: 600, color: alpha(T.amber, 0.9) }}>Data trust held back: </span>
+                {m.confidenceReason}
+              </span>
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 export function MeritA({ deal, a }: { deal: Deal; a: Analysis }) {
   const n = deal.narrative
   const radar: RadarDatumA[] = deal.merit.map((m) => ({ label: shortLabel[m.key] ?? m.label, value: m.score }))
   const meritColor = scoreColor(a.meritScore)
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, alignItems: 'start' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: 20, alignItems: 'start' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <Card padding="20px 24px">
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px', borderBottom: `1px solid ${T.border}`, paddingBottom: 16, marginBottom: 16 }}>
@@ -61,7 +94,7 @@ export function MeritA({ deal, a }: { deal: Deal; a: Analysis }) {
               <Mono>Standalone merit</Mono>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 4 }}>
                 <span style={{ fontFamily: FONT.serif, fontSize: 30, fontWeight: 700, color: meritColor, letterSpacing: -0.5 }}>{a.meritScore}</span>
-                <span style={{ fontSize: 11, color: T.muted, fontStyle: 'italic' }}>{a.meritLabel}</span>
+                <span style={{ fontSize: 11, color: T.muted }}>/ 100</span>
               </div>
             </div>
             <span style={{ marginLeft: 'auto', maxWidth: 280, textAlign: 'right', fontSize: 11, color: T.muted }}>
@@ -70,23 +103,7 @@ export function MeritA({ deal, a }: { deal: Deal; a: Analysis }) {
           </div>
           <div>
             {deal.merit.map((m, idx) => (
-              <div key={m.key} style={{ padding: '14px 0', borderTop: idx === 0 ? 'none' : `1px solid ${alpha(T.border, 0.6)}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <ScoreBadge score={m.score} size="sm" />
-                  <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{m.label}</span>
-                  <Mono color={confColor[m.confidence]}>{m.confidence} confidence</Mono>
-                </div>
-                <p style={{ marginTop: 6, fontSize: 13, lineHeight: 1.55, color: T.mutedHi }}>{m.rationale}</p>
-                {m.confidenceReason && (
-                  <p style={{ marginTop: 6, display: 'flex', gap: 6, fontSize: 11, lineHeight: 1.5, color: T.muted }}>
-                    <span style={{ marginTop: 6, height: 4, width: 4, flexShrink: 0, borderRadius: '50%', background: T.amber }} />
-                    <span>
-                      <span style={{ fontWeight: 600, color: alpha(T.amber, 0.9) }}>Confidence held back: </span>
-                      {m.confidenceReason}
-                    </span>
-                  </p>
-                )}
-              </div>
+              <MeritRowA key={m.key} m={m} first={idx === 0} />
             ))}
           </div>
         </Card>

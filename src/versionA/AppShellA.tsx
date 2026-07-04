@@ -28,7 +28,7 @@ function SidebarA({ deals, onLogout }: { deals: { status: string }[]; onLogout: 
         <div style={{ fontFamily: FONT.serif, fontSize: 19, fontWeight: 700, lineHeight: 1.15, color: T.text, letterSpacing: -0.3 }}>
           AI Deal<br />Operations
         </div>
-        <div style={{ fontSize: 10, color: T.muted, marginTop: 8, fontFamily: FONT.mono, letterSpacing: 0.5 }}>Version A · facelift</div>
+        <div style={{ fontSize: 10, color: T.muted, marginTop: 8, fontFamily: FONT.mono, letterSpacing: 0.5 }}>GCC · MENA private capital</div>
       </div>
       {/* Nav */}
       <div style={{ flex: 1, padding: '12px 0' }}>
@@ -84,7 +84,7 @@ export function AppShellA({ children, onLogout }: { children: ReactNode; onLogou
       <SidebarA deals={deals} onLogout={onLogout} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <KGStrip />
-        <div style={{ flex: 1, overflowY: 'auto' }}>{children}</div>
+        <div style={{ flex: 1, overflowY: 'auto' }} data-scroll-root>{children}</div>
       </div>
     </div>
   )

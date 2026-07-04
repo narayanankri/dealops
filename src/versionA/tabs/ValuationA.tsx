@@ -10,6 +10,7 @@ import { Card, Mono, SectionTitle, RangeBarA, BarsA, ValWalkA, Btn } from '../ui
 import { mult, signedPct, usdm } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import { exportModelXlsx } from '@/lib/exportModelXlsx'
+import { GenerateModelOverlay } from '@/components/GenerateModelOverlay'
 import { projectModel } from '@/engine/model'
 import type { Analysis, Deal, OperatingMetric, ProjectedModel, Returns, SensitivityGrid, ValuationAssumptions } from '@/types'
 
@@ -524,12 +525,14 @@ export function ValuationA({ deal, a }: { deal: Deal; a: Analysis }) {
   const asm = deal.assumptions
   const set = (patch: Partial<ValuationAssumptions>) => updateAssumptions(deal.id, patch)
   const pm = projectModel(deal)
+  const [generating, setGenerating] = useState(false)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {generating && <GenerateModelOverlay onDone={() => { exportModelXlsx(deal, a, mandate); setGenerating(false) }} />}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <span style={{ fontSize: 13, color: T.muted }}>Editable assumptions drive the live model — export it to a working Excel workbook.</span>
-        <Btn variant="cyan" onClick={() => exportModelXlsx(deal, a, mandate)}>Export Excel model</Btn>
+        <span style={{ fontSize: 13, color: T.muted }}>Editable assumptions drive the live model — generate a working Excel workbook.</span>
+        <Btn variant="cyan" onClick={() => setGenerating(true)}>Generate financial model</Btn>
       </div>
       {a.integrity.warnings.length > 0 && (
         <Card accent={a.integrity.blocking ? T.red : T.amber} padding="16px 20px" style={{ background: alpha(a.integrity.blocking ? T.red : T.amber, 0.08) }}>

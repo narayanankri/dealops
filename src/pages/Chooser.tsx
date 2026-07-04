@@ -29,8 +29,8 @@ export function Chooser({ onPick }: { onPick: (v: 'a' | 'b') => void }) {
               {['#00A651', '#F59E0B', '#0091DA'].map((c) => <span key={c} style={{ width: 24, height: 6, borderRadius: 3, background: c }} />)}
             </div>
           </div>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: 2, color: '#00A3E0', marginBottom: 8 }}>VERSION A</div>
-          <div style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: -0.4 }}>KPMG Editorial</div>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: 2, color: '#00A3E0', marginBottom: 8 }}>EDITORIAL</div>
+          <div style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: -0.4 }}>Editorial</div>
         </button>
 
         {/* Version B */}
@@ -41,7 +41,7 @@ export function Chooser({ onPick }: { onPick: (v: 'a' | 'b') => void }) {
             <div style={{ position: 'absolute', left: 16, top: 38, fontFamily: "'Space Grotesk', sans-serif", fontSize: 26, fontWeight: 700, color: '#fff', letterSpacing: -0.5 }}>1,750<span style={{ fontSize: 13, color: '#6c7480' }}>bn</span></div>
             <div style={{ position: 'absolute', right: 14, bottom: 14, width: 40, height: 40, borderRadius: 20, border: '2px solid #19c2db', borderTopColor: 'transparent', transform: 'rotate(45deg)' }} />
           </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: 2, color: '#19c2db', marginBottom: 8 }}>VERSION B</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: 2, color: '#19c2db', marginBottom: 8 }}>INSTRUMENT</div>
           <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: -0.4 }}>The Instrument</div>
         </button>
       </div>

@@ -138,7 +138,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <main className="relative z-10 min-w-0 flex-1 overflow-y-auto">{children}</main>
+      <main className="relative z-10 min-w-0 flex-1 overflow-y-auto" data-scroll-root>{children}</main>
     </div>
   )
 }

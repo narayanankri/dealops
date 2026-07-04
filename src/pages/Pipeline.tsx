@@ -35,7 +35,7 @@ function hasRecentNewsRisk(d: Deal): boolean {
 
 const FLAGS: { key: FlagKey; label: string; hint: string; test: (d: Deal, a: Analysis) => boolean }[] = [
   { key: 'lowTrust', label: 'Low data trust', hint: 'Data-trust score below 60 — inputs lean on inferred / estimated figures', test: (_d, a) => a.dataTrustScore < 60 },
-  { key: 'meritVsFit', label: 'High merit · low fit', hint: 'A strong business that sits outside the mandate — merit ≥ 70 but mandate fit < 75', test: (_d, a) => a.meritScore >= 70 && a.mandateFit.score < 75 },
+  { key: 'meritVsFit', label: 'High merit · low fit', hint: 'A high-merit business that sits outside the mandate — merit ≥ 70 but mandate fit < 75', test: (_d, a) => a.meritScore >= 70 && a.mandateFit.score < 75 },
   { key: 'valuation', label: 'Valuation concern', hint: 'Ask is more than 75% above the reconciled DCF + comps value', test: (_d, a) => a.assetValue.askVsValuePct > 75 },
   { key: 'newsRisk', label: 'Recent news risk', hint: `A ${RECENT_NEWS_YEAR}+ headline mentions a potential risk — worth a read`, test: (d) => hasRecentNewsRisk(d) },
   { key: 'sharia', label: 'Shariah concern', hint: 'Shariah screen is non-compliant or mixed', test: (d) => d.shariaScreen?.status === 'non-compliant' || d.shariaScreen?.status === 'mixed' },

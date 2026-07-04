@@ -223,8 +223,9 @@ export function RadarA({ data, max = 100, size = 280, color = T.cyan }: { data: 
   const valueR = (d: RadarDatumA) => (R * Math.max(0, Math.min(d.value, max))) / max
   const valuePoly = data.map((d, i) => pt(i, valueR(d)).join(',')).join(' ')
   const rings = [0.25, 0.5, 0.75, 1]
+  const PAD = 54 // horizontal gutter so axis labels never clip at the card edge
   return (
-    <svg viewBox={`0 0 ${size} ${size + 24}`} width="100%" style={{ overflow: 'visible' }}>
+    <svg viewBox={`${-PAD} -6 ${size + PAD * 2} ${size + 30}`} width="100%" style={{ overflow: 'visible', display: 'block' }}>
       {rings.map((lvl, i) => (
         <polygon key={i} points={poly(R * lvl)} fill="none" stroke={T.border} strokeWidth={1} opacity={0.7} />
       ))}
@@ -381,7 +382,7 @@ export function DonutA({ data, size = 150 }: { data: { label: string; value: num
 
 // ── Peer-bubble scatter (x = EV/Revenue, y = growth %, size = scale) ──
 export type ScatterPoint = { label: string; x: number; y: number; size?: number; target?: boolean }
-export function PeerScatterA({ points, xLabel = 'EV / Revenue', yLabel = 'Growth %', height = 280 }: { points: ScatterPoint[]; xLabel?: string; yLabel?: string; height?: number }) {
+export function PeerScatterA({ points, xLabel = 'EV / Revenue', yLabel = 'Growth %', height = 230 }: { points: ScatterPoint[]; xLabel?: string; yLabel?: string; height?: number }) {
   const W = 460
   const padL = 44, padR = 16, padT = 16, padB = 34
   const xs = points.map((p) => p.x), ys = points.map((p) => p.y)
@@ -390,33 +391,40 @@ export function PeerScatterA({ points, xLabel = 'EV / Revenue', yLabel = 'Growth
   const sy = (y: number) => height - padB - (y / yMax) * (height - padT - padB)
   const sizes = points.map((p) => p.size ?? 1)
   const sMax = Math.max(1, ...sizes)
-  const rOf = (s?: number) => 5 + Math.sqrt((s ?? 1) / sMax) * 14
+  const rOf = (s?: number) => 4 + Math.sqrt((s ?? 1) / sMax) * 9
   const ticks = [0, 0.25, 0.5, 0.75, 1]
+  const PAL = [T.cyan, T.purpleSoft, '#f5b94d', '#3fb98c', T.blue, '#c08bf0', '#e8a35a', '#5fd0c0']
+  const colorOf = (p: ScatterPoint, i: number) => (p.target ? T.magenta : PAL[i % PAL.length])
   return (
-    <svg viewBox={`0 0 ${W} ${height}`} width="100%">
-      {ticks.map((t) => {
-        const gx = padL + t * (W - padL - padR), gy = height - padB - t * (height - padT - padB)
-        return (
-          <g key={t}>
-            <line x1={padL} y1={gy} x2={W - padR} y2={gy} stroke={T.border} strokeWidth={0.6} opacity={0.5} />
-            <text x={padL - 6} y={gy} textAnchor="end" dominantBaseline="central" fontSize={9} fontFamily={FONT.mono} fill={T.muted}>{Math.round(t * yMax)}</text>
-            <text x={gx} y={height - padB + 14} textAnchor="middle" fontSize={9} fontFamily={FONT.mono} fill={T.muted}>{(t * xMax).toFixed(1)}x</text>
-          </g>
-        )
-      })}
-      <text x={(W) / 2} y={height - 4} textAnchor="middle" fontSize={9} fontFamily={FONT.mono} fill={T.muted} style={{ letterSpacing: 1, textTransform: 'uppercase' }}>{xLabel}</text>
-      <text x={12} y={height / 2} textAnchor="middle" fontSize={9} fontFamily={FONT.mono} fill={T.muted} transform={`rotate(-90 12 ${height / 2})`} style={{ letterSpacing: 1, textTransform: 'uppercase' }}>{yLabel}</text>
-      {points.map((p, i) => {
-        const x = sx(p.x), y = sy(p.y), rr = rOf(p.size)
-        const col = p.target ? T.magenta : i % 2 === 0 ? T.cyan : T.purpleSoft
-        return (
-          <g key={p.label}>
-            <circle cx={x} cy={y} r={rr} fill={alpha(col, 0.22)} stroke={col} strokeWidth={p.target ? 2 : 1.2} />
-            <text x={x} y={y - rr - 4} textAnchor="middle" fontSize={p.target ? 10 : 9} fontFamily={FONT.sans} fontWeight={p.target ? 700 : 500} fill={p.target ? T.magenta : T.mutedHi}>{p.label}</text>
-          </g>
-        )
-      })}
-    </svg>
+    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 18 }}>
+      <svg viewBox={`0 0 ${W} ${height}`} style={{ flex: '1 1 320px', minWidth: 0, maxWidth: 440, height: 'auto', display: 'block' }}>
+        {ticks.map((t) => {
+          const gx = padL + t * (W - padL - padR), gy = height - padB - t * (height - padT - padB)
+          return (
+            <g key={t}>
+              <line x1={padL} y1={gy} x2={W - padR} y2={gy} stroke={T.border} strokeWidth={0.6} opacity={0.5} />
+              <text x={padL - 6} y={gy} textAnchor="end" dominantBaseline="central" fontSize={9} fontFamily={FONT.mono} fill={T.muted}>{Math.round(t * yMax)}</text>
+              <text x={gx} y={height - padB + 14} textAnchor="middle" fontSize={9} fontFamily={FONT.mono} fill={T.muted}>{(t * xMax).toFixed(1)}x</text>
+            </g>
+          )
+        })}
+        <text x={(W) / 2} y={height - 4} textAnchor="middle" fontSize={9} fontFamily={FONT.mono} fill={T.muted} style={{ letterSpacing: 1, textTransform: 'uppercase' }}>{xLabel}</text>
+        <text x={12} y={height / 2} textAnchor="middle" fontSize={9} fontFamily={FONT.mono} fill={T.muted} transform={`rotate(-90 12 ${height / 2})`} style={{ letterSpacing: 1, textTransform: 'uppercase' }}>{yLabel}</text>
+        {points.map((p, i) => {
+          const col = colorOf(p, i)
+          return <circle key={p.label} cx={sx(p.x)} cy={sy(p.y)} r={rOf(p.size)} fill={alpha(col, 0.24)} stroke={col} strokeWidth={p.target ? 2.4 : 1.3} />
+        })}
+      </svg>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6, minWidth: 150, fontSize: 12 }}>
+        {points.map((p, i) => (
+          <li key={p.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ height: 10, width: 10, flexShrink: 0, borderRadius: '50%', background: colorOf(p, i) }} />
+            <span style={{ color: p.target ? T.text : T.mutedHi, fontWeight: p.target ? 700 : 500 }}>{p.label}{p.target ? ' · this deal' : ''}</span>
+            <span style={{ marginLeft: 'auto', flexShrink: 0, fontFamily: FONT.mono, fontSize: 11, color: T.muted }}>{p.x.toFixed(1)}x</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 

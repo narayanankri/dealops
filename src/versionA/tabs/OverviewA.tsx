@@ -4,7 +4,7 @@
 // ───────────────────────────────────────────────────────────
 import { T, FONT, alpha } from '../theme'
 import { Card, Mono, SectionTitle } from '../uiA'
-import { usdm, mult } from '@/lib/format'
+import { usdm, mult, pctSmart } from '@/lib/format'
 import type { Analysis, BusinessVitals, Deal, RevenueLine, TrustField } from '@/types'
 
 const trendGlyph = { up: '▲', down: '▼', flat: '—' } as const
@@ -99,13 +99,13 @@ function BusinessVitalsCard({ vitals }: { vitals: BusinessVitals }) {
           return (
             <div key={k} style={{ padding: '14px 0', borderTop: idx === 0 ? 'none' : `1px solid ${T.border}` }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
-                <div style={{ minWidth: 0 }}>
+                <div style={{ flex: '1 1 auto', minWidth: 110 }}>
                   <Mono color={T.mutedHi}>{k}</Mono>
                   <div style={{ marginTop: 2, fontSize: 11, color: T.muted }}>{v.label}</div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                    <span style={{ fontFamily: FONT.serif, fontWeight: 700, color: nd ? T.muted : T.text, fontSize: nd ? 13 : 22, fontStyle: nd ? 'italic' : 'normal' }}>{v.value}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flex: '0 1 auto', minWidth: 0, maxWidth: '58%' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    <span style={{ fontFamily: FONT.serif, fontWeight: 700, color: nd ? T.muted : T.text, fontSize: nd ? 13 : v.value.length > 22 ? 15 : 22, fontStyle: nd ? 'italic' : 'normal', textAlign: 'right', wordBreak: 'break-word' }}>{v.value}</span>
                     {v.trend && !nd && <span style={{ fontSize: 13, color: trendTone[v.trend] }}>{trendGlyph[v.trend]}</span>}
                   </div>
                   {!nd && (
@@ -277,7 +277,7 @@ export function OverviewA({ deal, a }: { deal: Deal; a: Analysis }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '4px 8px', fontSize: 13 }}>
           <Mono color={T.cyan}>The proposal</Mono>
           <span style={{ color: T.mutedHi }}>
-            {usdm(deal.ticketUSDm)} {deal.instrument.toLowerCase()} for ~{own.toFixed(1)}% of {deal.name} at {usdm(deal.ask.askValuationUSDm)}
+            {usdm(deal.ticketUSDm)} {deal.instrument.toLowerCase()} for ~{pctSmart(own)} of {deal.name} at {usdm(deal.ask.askValuationUSDm)}
             {deal.ask.series ? ` ${deal.ask.series}` : ''}
             {lastBit}
           </span>

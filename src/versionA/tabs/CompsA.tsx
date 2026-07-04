@@ -97,7 +97,7 @@ export function CompsA({ deal, a }: { deal: Deal; a: Analysis }) {
         ]
         return pts.length > 1 ? (
           <Card padding="20px 24px">
-            <SectionTitle kicker="bubble size = revenue scale · ★ = this deal at its implied multiple" title="Peer landscape — multiple vs growth" />
+            <SectionTitle kicker="bubble size = revenue scale · peers keyed at right" title="Peer landscape — multiple vs growth" />
             <PeerScatterA points={pts} />
           </Card>
         ) : null

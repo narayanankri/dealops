@@ -7,9 +7,10 @@ import { useState } from 'react'
 import { T, FONT, alpha } from '../theme'
 import { Card, SectionTitle, Mono } from '../uiA'
 import { useApp } from '@/lib/store'
-import { researchPlan, type ResearchWorkstream, type ResearchOpenQuestion, type ResearchRedFlag } from '@/engine/research'
+import { researchPlan, type ResearchWorkstream, type ResearchOpenQuestion, type ResearchRedFlag, type ResearchFinding } from '@/engine/research'
 import type { Analysis, Deal } from '@/types'
 
+const FINDING_TONE: Record<ResearchFinding['status'], string> = { confirmed: T.green, flag: T.amber, open: T.red }
 const BASIS_TONE: Record<string, string> = { stated: T.green, inferred: T.amber, estimated: T.red }
 const PRI: Record<string, string> = { high: T.red, medium: T.amber, low: T.cyan }
 const SEV: Record<string, string> = { high: T.red, medium: T.amber, low: T.muted }
@@ -42,6 +43,8 @@ function WorkstreamA({ ws }: { ws: ResearchWorkstream }) {
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 20px', marginTop: 8, fontSize: 11, color: T.muted }}>
         <span><span style={{ color: T.mutedHi }}>Owner:</span> {ws.owner}</span>
+        <span><span style={{ color: T.mutedHi }}>Est. effort:</span> ~{ws.estDays} days</span>
+        <span><span style={{ color: T.mutedHi }}>Tasks:</span> {ws.tasks.length}</span>
         {ws.addresses.length > 0 && <span><span style={{ color: T.mutedHi }}>Addresses:</span> {ws.addresses.join(', ')}</span>}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
@@ -55,6 +58,32 @@ function WorkstreamA({ ws }: { ws: ResearchWorkstream }) {
             {t.deliverable && <div style={{ marginTop: 2, fontSize: 11, lineHeight: 1.5, color: T.muted }}><span style={{ color: T.mutedHi, fontWeight: 600 }}>Deliverable: </span>{t.deliverable}</div>}
           </div>
         ))}
+      </div>
+    </Card>
+  )
+}
+
+function FindingsA({ findings, summary }: { findings: ResearchFinding[]; summary: string }) {
+  return (
+    <Card padding="20px 24px">
+      <SectionTitle kicker="research output · what diligence found" title="Findings" />
+      <div style={{ fontSize: 11, color: T.muted, fontFamily: FONT.mono, marginBottom: 8 }}>{summary}</div>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {findings.map((f, i) => {
+          const c = FINDING_TONE[f.status]
+          return (
+            <div key={i} style={{ padding: '12px 0', borderTop: i === 0 ? 'none' : `1px solid ${alpha(T.border, 0.6)}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ height: 8, width: 8, flexShrink: 0, borderRadius: '50%', background: c }} />
+                <span style={{ fontFamily: FONT.mono, fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: T.muted }}>{f.area}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{f.title}</span>
+                <Chip label={f.status} color={c} />
+                <span style={{ marginLeft: 'auto', fontFamily: FONT.mono, fontSize: 9, color: T.muted }}>{f.confidence} confidence</span>
+              </div>
+              <p style={{ margin: '4px 0 0', paddingLeft: 18, fontSize: 12.5, lineHeight: 1.55, color: T.mutedHi }}>{f.result}</p>
+            </div>
+          )
+        })}
       </div>
     </Card>
   )
@@ -159,6 +188,8 @@ export function ResearchA({ deal, a }: { deal: Deal; a: Analysis }) {
         <p style={{ margin: '4px 0 0', fontSize: 13, lineHeight: 1.7, color: T.mutedHi }}>{plan.summary}</p>
         <p style={{ margin: '8px 0 0', fontSize: 11, fontStyle: 'italic', color: T.muted }}>Target: {deal.sector} · {deal.geography} · {deal.stage} · derived deterministically from the screened deal record</p>
       </Card>
+
+      {plan.findings.length > 0 && <FindingsA findings={plan.findings} summary={plan.outputSummary} />}
 
       {plan.criticalPath.length > 0 && (
         <Card padding="20px 24px" accent={T.amber}>

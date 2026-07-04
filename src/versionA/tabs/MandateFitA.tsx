@@ -23,7 +23,6 @@ function DimRow({ d }: { d: Analysis['mandateFit']['dimensions'][number] }) {
         <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{d.label}</span>
         <ScoreBadge score={d.score} size="sm" />
         {d.status === 'breach' && <Mono color={T.red}>breach</Mono>}
-        {d.status === 'soft' && <Mono color={T.amber}>confirm</Mono>}
       </div>
       <p style={{ marginTop: 4, paddingLeft: 18, fontSize: 13, lineHeight: 1.55, color: T.mutedHi }}>{d.takeaway}</p>
     </div>
@@ -44,7 +43,7 @@ function MandateSnapshot({ m }: { m: Mandate }) {
   ]
   return (
     <Card padding="16px 20px">
-      <SectionTitle kicker="the fund's rules" title="Judged against" />
+      <SectionTitle kicker="the fund's rules" title="Assessed against" />
       <div>
         {rows.map(([k, v]) => (
           <div key={k} style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, padding: '4px 0', borderBottom: `1px solid ${alpha(T.border, 0.5)}` }}>
@@ -119,15 +118,12 @@ export function MandateFitA({ deal, a }: { deal: Deal; a: Analysis }) {
   const fit = a.mandateFit
   const conc = fit.concentration
   const radar: RadarDatumA[] = fit.dimensions.map((d) => ({ label: shortLabel[d.key] ?? d.label, value: d.score }))
-  const hardKeys = ['sector', 'geo', 'stage', 'instrument']
-  const gates = fit.dimensions.filter((d) => hardKeys.includes(d.key))
-  const graded = fit.dimensions.filter((d) => !hardKeys.includes(d.key))
   const fitColor = scoreColor(fit.score)
   const concWarn = !conc.fits || conc.pctOfFund >= conc.capPct - 1
   const concTone = conc.fits ? (conc.pctOfFund >= conc.capPct - 1 ? T.amber : T.green) : T.red
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, alignItems: 'start' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: 20, alignItems: 'start' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         {fit.redLineBreaches.length > 0 && (
           <Card accent={T.red} padding="18px 22px" style={{ background: alpha(T.red, 0.08) }}>
@@ -151,15 +147,10 @@ export function MandateFitA({ deal, a }: { deal: Deal; a: Analysis }) {
 
         <Card padding="20px 24px">
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 }}>
-            <Mono>Eligibility gates</Mono>
-            <Mono>pass / breach</Mono>
-          </div>
-          <div>{gates.map((d) => <DimRow key={d.key} d={d} />)}</div>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 16, marginBottom: 4, borderTop: `1px solid ${T.border}`, paddingTop: 16 }}>
-            <Mono>Graded fit</Mono>
+            <Mono>Mandate dimensions</Mono>
             <Mono>scored 0–100</Mono>
           </div>
-          <div>{graded.map((d) => <DimRow key={d.key} d={d} />)}</div>
+          <div>{fit.dimensions.map((d) => <DimRow key={d.key} d={d} />)}</div>
         </Card>
       </div>
 

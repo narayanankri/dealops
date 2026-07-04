@@ -2,6 +2,9 @@ import { cn } from '@/lib/cn'
 import { usdm } from '@/lib/format'
 import type { CapTableRow } from '@/types'
 
+// Distinct hues for peer bubbles so the side legend reads unambiguously (target deal uses magenta).
+const PEER_PALETTE = ['#19c2db', '#7c7cf0', '#f5b94d', '#3fb98c', '#5aa9e6', '#c08bf0', '#e8a35a', '#5fd0c0']
+
 // ── Cap table / ownership structure ──
 const capColor: Record<CapTableRow['type'], string> = {
   founder: 'var(--color-accent)',
@@ -302,7 +305,7 @@ export function Donut({ data, size = 132 }: { data: { label: string; value: numb
 
 // ── Peer-bubble scatter: x = EV/Revenue, y = growth %, bubble = scale; ★ marks the deal ──
 export type ScatterPoint = { label: string; x: number; y: number; size?: number; target?: boolean }
-export function PeerScatter({ points, xLabel = 'EV / Revenue', yLabel = 'Growth %', height = 280 }: { points: ScatterPoint[]; xLabel?: string; yLabel?: string; height?: number }) {
+export function PeerScatter({ points, xLabel = 'EV / Revenue', yLabel = 'Growth %', height = 230 }: { points: ScatterPoint[]; xLabel?: string; yLabel?: string; height?: number }) {
   const W = 460
   const padL = 44, padR = 18, padT = 18, padB = 34
   const xMax = Math.max(1, ...points.map((p) => p.x)) * 1.12
@@ -310,33 +313,39 @@ export function PeerScatter({ points, xLabel = 'EV / Revenue', yLabel = 'Growth 
   const sx = (x: number) => padL + (x / xMax) * (W - padL - padR)
   const sy = (y: number) => height - padB - (y / yMax) * (height - padT - padB)
   const sMax = Math.max(1, ...points.map((p) => p.size ?? 1))
-  const rOf = (s?: number) => 5 + Math.sqrt((s ?? 1) / sMax) * 14
+  const rOf = (s?: number) => 4 + Math.sqrt((s ?? 1) / sMax) * 9
   const ticks = [0, 0.25, 0.5, 0.75, 1]
+  const colorOf = (p: ScatterPoint, i: number) => (p.target ? '#ff5da2' : PEER_PALETTE[i % PEER_PALETTE.length])
   return (
-    <svg viewBox={`0 0 ${W} ${height}`} className="w-full">
-      {ticks.map((t) => {
-        const gx = padL + t * (W - padL - padR), gy = height - padB - t * (height - padT - padB)
-        return (
-          <g key={t}>
-            <line x1={padL} y1={gy} x2={W - padR} y2={gy} stroke="var(--color-line)" strokeWidth={0.6} opacity={0.6} />
-            <text x={padL - 6} y={gy} textAnchor="end" dominantBaseline="central" className="fill-ink-3" style={{ fontSize: 9, fontFamily: 'var(--font-mono)' }}>{Math.round(t * yMax)}</text>
-            <text x={gx} y={height - padB + 14} textAnchor="middle" className="fill-ink-3" style={{ fontSize: 9, fontFamily: 'var(--font-mono)' }}>{(t * xMax).toFixed(1)}x</text>
-          </g>
-        )
-      })}
-      <text x={W / 2} y={height - 3} textAnchor="middle" className="fill-ink-3 uppercase" style={{ fontSize: 9, letterSpacing: 1, fontFamily: 'var(--font-mono)' }}>{xLabel}</text>
-      <text x={11} y={height / 2} textAnchor="middle" className="fill-ink-3 uppercase" style={{ fontSize: 9, letterSpacing: 1, fontFamily: 'var(--font-mono)' }} transform={`rotate(-90 11 ${height / 2})`}>{yLabel}</text>
-      {points.map((p, i) => {
-        const x = sx(p.x), y = sy(p.y), rr = rOf(p.size)
-        const col = p.target ? 'var(--color-neg)' : i % 2 === 0 ? 'var(--color-accent)' : 'var(--color-indigo)'
-        return (
-          <g key={p.label}>
-            <circle cx={x} cy={y} r={rr} fill={col} fillOpacity={0.18} stroke={col} strokeWidth={p.target ? 2 : 1.2} />
-            <text x={x} y={y - rr - 4} textAnchor="middle" className={p.target ? 'fill-neg' : 'fill-ink-2'} style={{ fontSize: p.target ? 10 : 9, fontWeight: p.target ? 600 : 500 }}>{p.label}</text>
-          </g>
-        )
-      })}
-    </svg>
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+      <svg viewBox={`0 0 ${W} ${height}`} className="block h-auto w-full sm:max-w-[420px]">
+        {ticks.map((t) => {
+          const gx = padL + t * (W - padL - padR), gy = height - padB - t * (height - padT - padB)
+          return (
+            <g key={t}>
+              <line x1={padL} y1={gy} x2={W - padR} y2={gy} stroke="var(--color-line)" strokeWidth={0.6} opacity={0.6} />
+              <text x={padL - 6} y={gy} textAnchor="end" dominantBaseline="central" className="fill-ink-3" style={{ fontSize: 9, fontFamily: 'var(--font-mono)' }}>{Math.round(t * yMax)}</text>
+              <text x={gx} y={height - padB + 14} textAnchor="middle" className="fill-ink-3" style={{ fontSize: 9, fontFamily: 'var(--font-mono)' }}>{(t * xMax).toFixed(1)}x</text>
+            </g>
+          )
+        })}
+        <text x={W / 2} y={height - 3} textAnchor="middle" className="fill-ink-3 uppercase" style={{ fontSize: 9, letterSpacing: 1, fontFamily: 'var(--font-mono)' }}>{xLabel}</text>
+        <text x={11} y={height / 2} textAnchor="middle" className="fill-ink-3 uppercase" style={{ fontSize: 9, letterSpacing: 1, fontFamily: 'var(--font-mono)' }} transform={`rotate(-90 11 ${height / 2})`}>{yLabel}</text>
+        {points.map((p, i) => {
+          const x = sx(p.x), y = sy(p.y), col = colorOf(p, i)
+          return <circle key={p.label} cx={x} cy={y} r={rOf(p.size)} fill={col} fillOpacity={0.2} stroke={col} strokeWidth={p.target ? 2.4 : 1.3} />
+        })}
+      </svg>
+      <ul className="flex flex-col gap-1.5 self-center text-[12px] sm:min-w-[150px]">
+        {points.map((p, i) => (
+          <li key={p.label} className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: colorOf(p, i) }} />
+            <span className={cn('truncate', p.target ? 'font-semibold text-ink' : 'text-ink-2')}>{p.label}{p.target ? ' · this deal' : ''}</span>
+            <span className="ml-auto shrink-0 font-mono text-[11px] text-ink-3">{p.x.toFixed(1)}x</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 

@@ -1,12 +1,13 @@
 import { Card, ScoreChip, SectionTitle, Stat, TrustTag, Button, Pill } from '@/components/ui'
 import { CapTable, PnLTable, RadarChart, RadarLegend, RangeBar, PeerScatter, ValuationWalk, type RadarDatum } from '@/components/deal/viz'
-import { mult, signedPct, usdm } from '@/lib/format'
+import { mult, signedPct, usdm, pctSmart } from '@/lib/format'
 import { cn } from '@/lib/cn'
 import { useApp } from '@/lib/store'
 import { projectModel } from '@/engine/model'
 import { compsEquityFrom } from '@/engine'
 import { exportMemoPdf } from '@/lib/exportMemoPdf'
 import { exportModelXlsx } from '@/lib/exportModelXlsx'
+import { GenerateModelOverlay } from '@/components/GenerateModelOverlay'
 import { researchPlan, type ResearchWorkstream, type ResearchOpenQuestion, type ResearchRedFlag } from '@/engine/research'
 import { useState } from 'react'
 import type { Analysis, BusinessVitals, Deal, Mandate, OperatingMetric, ProjectedModel, RevenueLine, Returns, SensitivityGrid, ValuationAssumptions } from '@/types'
@@ -76,10 +77,10 @@ export function OverviewTab({ deal, a }: { deal: Deal; a: Analysis }) {
           <SectionTitle>Headline metrics</SectionTitle>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
             {metrics.map((m) => (
-              <div key={m.label}>
+              <div key={m.label} className="min-w-0">
                 <div className="text-[11px] tracking-wide text-ink-3 uppercase">{m.label}</div>
-                <div className="mt-0.5 flex items-baseline gap-1.5">
-                  <span className="text-lg font-semibold text-ink tnum">{m.value}</span>
+                <div className="mt-0.5 flex flex-wrap items-baseline gap-1.5">
+                  <span className={cn('font-semibold text-ink tnum break-words', m.value.length > 16 ? 'text-base' : 'text-lg')}>{m.value}</span>
                   {m.trend && <span className={cn('text-xs', trendTone[m.trend])}>{trendGlyph[m.trend]}</span>}
                 </div>
                 <div className="mt-0.5 flex items-center gap-2">
@@ -161,7 +162,7 @@ function WhyNowBanner({ deal }: { deal: Deal }) {
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
         <span className="text-[11px] font-semibold tracking-wide text-accent-2 uppercase">The proposal</span>
         <span className="text-ink-2">
-          {usdm(deal.ticketUSDm)} {deal.instrument.toLowerCase()} for ~{own.toFixed(1)}% of {deal.name} at {usdm(deal.ask.askValuationUSDm)}
+          {usdm(deal.ticketUSDm)} {deal.instrument.toLowerCase()} for ~{pctSmart(own)} of {deal.name} at {usdm(deal.ask.askValuationUSDm)}
           {deal.ask.series ? ` ${deal.ask.series}` : ''}
           {lastBit}
         </span>
@@ -254,13 +255,13 @@ function BusinessVitalsCard({ vitals }: { vitals: BusinessVitals }) {
           return (
             <div key={k} className="py-3.5 first:pt-1 last:pb-0">
               <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
+                <div className="min-w-[110px] flex-1">
                   <div className="text-[11px] font-semibold tracking-wide text-ink-2 uppercase">{k}</div>
                   <div className="mt-0.5 text-[11px] text-ink-3">{v.label}</div>
                 </div>
-                <div className="flex shrink-0 flex-col items-end">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className={cn('font-semibold tnum leading-none', nd ? 'text-sm text-ink-3 italic' : 'text-xl text-ink')}>{v.value}</span>
+                <div className="flex min-w-0 max-w-[58%] flex-col items-end">
+                  <div className="flex flex-wrap items-baseline justify-end gap-1.5">
+                    <span className={cn('font-semibold tnum leading-tight break-words text-right', nd ? 'text-sm text-ink-3 italic' : v.value.length > 22 ? 'text-[15px] text-ink' : 'text-xl text-ink')}>{v.value}</span>
                     {v.trend && !nd && <span className={cn('text-sm', trendTone[v.trend])}>{trendGlyph[v.trend]}</span>}
                   </div>
                   {!nd && (
@@ -426,9 +427,6 @@ export function MandateTab({ deal, a }: { deal: Deal; a: Analysis }) {
   const conc = fit.concentration
   const dot = (s: string) => (s === 'pass' ? 'bg-pos' : s === 'soft' ? 'bg-warn' : 'bg-neg')
   const radar: RadarDatum[] = fit.dimensions.map((d) => ({ label: shortLabel[d.key] ?? d.label, value: d.score, tone: statusToTone(d.status) }))
-  const hardKeys = ['sector', 'geo', 'stage', 'instrument']
-  const gates = fit.dimensions.filter((d) => hardKeys.includes(d.key))
-  const graded = fit.dimensions.filter((d) => !hardKeys.includes(d.key))
   const DimRow = ({ d }: { d: Analysis['mandateFit']['dimensions'][number] }) => (
     <div className="py-3 first:pt-0">
       <div className="flex items-center gap-2.5">
@@ -436,7 +434,6 @@ export function MandateTab({ deal, a }: { deal: Deal; a: Analysis }) {
         <span className="text-[15px] font-medium text-ink">{d.label}</span>
         <ScoreChip score={d.score} size="sm" />
         {d.status === 'breach' && <Pill tone="neg">breach</Pill>}
-        {d.status === 'soft' && <Pill tone="warn">confirm</Pill>}
       </div>
       <p className="mt-1 pl-[18px] text-sm leading-relaxed text-ink-2">{d.takeaway}</p>
     </div>
@@ -467,18 +464,13 @@ export function MandateTab({ deal, a }: { deal: Deal; a: Analysis }) {
           <p className="text-[15px] leading-relaxed text-ink-2">{fit.narrative}</p>
         </Card>
 
-        {/* Dimensions grouped: hard eligibility gates vs graded fit */}
+        {/* All mandate dimensions on one 0–100 scale */}
         <Card className="px-6 py-5">
           <div className="mb-1 flex items-baseline justify-between">
-            <span className="text-[11px] font-semibold tracking-wide text-ink-3 uppercase">Eligibility gates</span>
-            <span className="text-[11px] text-ink-3">pass / breach</span>
-          </div>
-          <div className="divide-y divide-line-soft/50">{gates.map((d) => <DimRow key={d.key} d={d} />)}</div>
-          <div className="mt-4 mb-1 flex items-baseline justify-between border-t border-line-soft/60 pt-4">
-            <span className="text-[11px] font-semibold tracking-wide text-ink-3 uppercase">Graded fit</span>
+            <span className="text-[11px] font-semibold tracking-wide text-ink-3 uppercase">Mandate dimensions</span>
             <span className="text-[11px] text-ink-3">scored 0–100</span>
           </div>
-          <div className="divide-y divide-line-soft/50">{graded.map((d) => <DimRow key={d.key} d={d} />)}</div>
+          <div className="divide-y divide-line-soft/50">{fit.dimensions.map((d) => <DimRow key={d.key} d={d} />)}</div>
         </Card>
       </div>
 
@@ -529,7 +521,7 @@ function MandateSnapshot({ m }: { m: Mandate }) {
   ]
   return (
     <Card className="px-5 py-4">
-      <SectionTitle hint="the fund's rules">Judged against</SectionTitle>
+      <SectionTitle hint="the fund's rules">Assessed against</SectionTitle>
       <div className="space-y-2">
         {rows.map(([k, v]) => (
           <div key={k} className="flex items-baseline justify-between gap-3 border-b border-line-soft/30 py-1 last:border-0">
@@ -617,7 +609,7 @@ export function MeritTab({ deal, a }: { deal: Deal; a: Analysis }) {
       <div className="lg:col-span-2 space-y-5">
         <Card className="px-6 py-5">
           <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line-soft/60 pb-4">
-            <Stat label="Standalone merit" value={a.meritScore} tone={a.meritScore >= 70 ? 'pos' : a.meritScore >= 50 ? 'warn' : 'neg'} sub={a.meritLabel} />
+            <Stat label="Standalone merit" value={a.meritScore} tone={a.meritScore >= 70 ? 'pos' : a.meritScore >= 50 ? 'warn' : 'neg'} />
             <span className="ml-auto max-w-[280px] text-right text-xs text-ink-3">
               Strategy-agnostic — is this a good business <em>on its own</em>, independent of the fund.
             </span>
@@ -628,15 +620,15 @@ export function MeritTab({ deal, a }: { deal: Deal; a: Analysis }) {
                 <summary className="flex cursor-pointer list-none items-center gap-2.5 [&::-webkit-details-marker]:hidden">
                   <ScoreChip score={m.score} size="sm" />
                   <span className="text-[15px] font-medium text-ink">{m.label}</span>
-                  <Pill tone={confTone[m.confidence]}>{m.confidence} confidence</Pill>
-                  <Chevron className="ml-auto" />
+                  <span className="ml-auto"><Pill tone={confTone[m.confidence]}>{m.confidence} data trust</Pill></span>
+                  <Chevron className="ml-2" />
                 </summary>
                 <p className="mt-1.5 text-sm leading-relaxed text-ink-2">{m.rationale}</p>
                 {m.confidenceReason && (
                   <p className="mt-1.5 flex gap-1.5 text-xs leading-relaxed text-ink-3">
                     <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-warn" />
                     <span>
-                      <span className="font-medium text-warn/90">Confidence held back: </span>
+                      <span className="font-medium text-warn/90">Data trust held back: </span>
                       {m.confidenceReason}
                     </span>
                   </p>
@@ -654,9 +646,9 @@ export function MeritTab({ deal, a }: { deal: Deal; a: Analysis }) {
           <RadarChart data={radar} />
           <RadarLegend
             items={[
-              { color: 'pos', label: 'Strong' },
+              { color: 'pos', label: 'High' },
               { color: 'warn', label: 'Moderate' },
-              { color: 'neg', label: 'Weak' },
+              { color: 'neg', label: 'Low' },
               { color: 'neg', label: 'Low conf.', dashed: true },
             ]}
           />
@@ -774,7 +766,7 @@ export function CompsTab({ deal, a }: { deal: Deal; a: Analysis }) {
         ]
         return pts.length > 1 ? (
           <Card className="px-6 py-5">
-            <SectionTitle kicker="comparables" hint="bubble = revenue scale · ◆ = this deal at its implied multiple">Peer landscape — multiple vs growth</SectionTitle>
+            <SectionTitle kicker="comparables" hint="bubble = revenue scale · peers keyed at right">Peer landscape — multiple vs growth</SectionTitle>
             <PeerScatter points={pts} />
           </Card>
         ) : null
@@ -903,12 +895,14 @@ export function ValuationTab({ deal, a }: { deal: Deal; a: Analysis }) {
   const asm = deal.assumptions
   const set = (patch: Partial<ValuationAssumptions>) => updateAssumptions(deal.id, patch)
   const pm = projectModel(deal)
+  const [generating, setGenerating] = useState(false)
 
   return (
     <div className="space-y-5">
+      {generating && <GenerateModelOverlay onDone={() => { exportModelXlsx(deal, a, mandate); setGenerating(false) }} />}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-ink-3">Editable assumptions drive the live model — export it to a working Excel workbook.</p>
-        <Button onClick={() => exportModelXlsx(deal, a, mandate)}>Export Excel model</Button>
+        <p className="text-sm text-ink-3">Editable assumptions drive the live model — generate a working Excel workbook.</p>
+        <Button onClick={() => setGenerating(true)}>Generate financial model</Button>
       </div>
       {a.integrity.warnings.length > 0 && (
         <Card accent={a.integrity.blocking ? 'neg' : 'warn'} className={cn('px-5 py-4', a.integrity.blocking ? 'bg-neg-bg/30' : 'bg-warn-bg/30')}>
@@ -1548,7 +1542,7 @@ const sevTone = { high: 'neg', medium: 'warn', low: 'pos' } as const
 // Print the memo to PDF. The browser uses document.title as the default filename,
 // so we swap in a clean "<Deal> — IC Memo" name for the duration of the print, then
 export function MemoTab({ deal, a }: { deal: Deal; a: Analysis }) {
-  const { mandate } = useApp()
+  const { mandate, icSubmissionFor } = useApp()
   const n = deal.narrative
   const av = a.assetValue
   const asm = deal.assumptions
@@ -1571,7 +1565,7 @@ export function MemoTab({ deal, a }: { deal: Deal; a: Analysis }) {
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2 print:hidden">
-          <Button onClick={() => exportMemoPdf(deal, a, mandate)}>Export PDF</Button>
+          <Button onClick={() => exportMemoPdf(deal, a, mandate, icSubmissionFor(deal.id))}>Export PDF</Button>
           <span className="whitespace-nowrap text-right text-[10px] text-ink-3">Prepared by AI Deal Operations</span>
         </div>
       </div>
@@ -1580,7 +1574,7 @@ export function MemoTab({ deal, a }: { deal: Deal; a: Analysis }) {
       <MemoSection title="Executive summary">
         <div className="mb-4 rounded-lg border border-line-soft/60 bg-panel-2/50 px-4 py-3 text-sm leading-relaxed text-ink-2">
           <span className="font-medium text-ink">The proposal: </span>
-          {usdm(deal.ticketUSDm)} {deal.instrument.toLowerCase()} for ~{ownership.toFixed(1)}% of {deal.name} at a {usdm(deal.ask.askValuationUSDm)} {deal.ask.series ? `${deal.ask.series.toLowerCase()} ` : ''}mark
+          {usdm(deal.ticketUSDm)} {deal.instrument.toLowerCase()} for ~{pctSmart(ownership)} of {deal.name} at a {usdm(deal.ask.askValuationUSDm)} {deal.ask.series ? `${deal.ask.series.toLowerCase()} ` : ''}mark
           {deal.totalRaisedUSDm ? `; the company has raised ${usdm(deal.totalRaisedUSDm)} to date` : ''}. {n.icThesis}
         </div>
         <div className="grid grid-cols-4 gap-3">
@@ -2063,6 +2057,8 @@ function WorkstreamCard({ ws }: { ws: ResearchWorkstream }) {
       </div>
       <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-ink-3">
         <span><span className="text-ink-2">Owner:</span> {ws.owner}</span>
+        <span><span className="text-ink-2">Est. effort:</span> ~{ws.estDays} days</span>
+        <span><span className="text-ink-2">Tasks:</span> {ws.tasks.length}</span>
         {ws.addresses.length > 0 && <span><span className="text-ink-2">Addresses:</span> {ws.addresses.join(', ')}</span>}
       </div>
       <div className="mt-3 space-y-2">
@@ -2135,6 +2131,31 @@ export function ResearchTab({ deal, a }: { deal: Deal; a: Analysis }) {
         <p className="text-sm leading-relaxed text-ink-2">{plan.summary}</p>
         <p className="mt-2 text-[11px] text-ink-3 italic">Target: {deal.sector} · {deal.geography} · {deal.stage} · derived deterministically from the screened deal record</p>
       </Card>
+
+      {/* Research OUTPUT — what the workplan surfaced */}
+      {plan.findings.length > 0 && (
+        <Card className="px-6 py-5">
+          <SectionTitle kicker="research output · what diligence found" hint={plan.outputSummary}>Findings</SectionTitle>
+          <div className="mt-1 divide-y divide-line-soft/50">
+            {plan.findings.map((f, i) => {
+              const tone = f.status === 'confirmed' ? 'pos' : f.status === 'flag' ? 'warn' : 'neg'
+              const dotCls = tone === 'pos' ? 'bg-pos' : tone === 'warn' ? 'bg-warn' : 'bg-neg'
+              return (
+                <div key={i} className="py-3 first:pt-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={cn('h-2 w-2 shrink-0 rounded-full', dotCls)} />
+                    <span className="font-mono text-[10px] tracking-wide text-ink-3 uppercase">{f.area}</span>
+                    <span className="text-[15px] font-medium text-ink">{f.title}</span>
+                    <Pill tone={tone as 'pos' | 'warn' | 'neg'}>{f.status}</Pill>
+                    <span className="ml-auto font-mono text-[10px] text-ink-3">{f.confidence} confidence</span>
+                  </div>
+                  <p className="mt-1 pl-[16px] text-sm leading-relaxed text-ink-2">{f.result}</p>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      )}
 
       {plan.criticalPath.length > 0 && (
         <Card accent="warn" className="px-6 py-5">
