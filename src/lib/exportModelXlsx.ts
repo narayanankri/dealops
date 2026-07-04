@@ -100,7 +100,7 @@ function synthStatements(deal: Deal): Statements {
   const m0 = a.ebitdaMarginPct[0] / 100
   const priorRev = baseRev / (1 + (g0 || 0.2))
   const labels: ModelYear[] = []
-  const startYr = (deal.foundedYear && deal.foundedYear < 2024 ? 2024 : 2024)
+  const startYr = 2024
   labels.push({ label: `${startYr}`, actual: true })
   labels.push({ label: `${startYr + 1}`, actual: true })
   for (let i = 0; i < n; i++) labels.push({ label: `${startYr + 2 + i}`, actual: false })

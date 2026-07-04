@@ -1,6 +1,6 @@
 // ───────────────────────────────────────────────────────────
 // Version A — IC Memo tab. Mirrors Version B's MemoTab content (on-screen
-// memo; PDF export omitted), re-skinned with the navy/serif primitives.
+// memo + shared PDF export), re-skinned with the navy/serif primitives.
 // ───────────────────────────────────────────────────────────
 import { T, FONT, alpha } from '../theme'
 import { Card, Mono, Serif, Btn } from '../uiA'
