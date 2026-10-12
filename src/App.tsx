@@ -23,6 +23,12 @@ const AUTH_KEY = 'dealops_authed'
 const VER_KEY = 'dealops_version'
 type Version = 'a' | 'b'
 
+// Feature flag — the Editorial (Version A) skin and the version chooser.
+// Off: the product ships as the Instrument only — no chooser on entry, no
+// floating Selector/Editorial toggle, /a/* redirects to /. Flip to true to
+// restore all of it; nothing in src/versionA or src/pages/Chooser.tsx is removed.
+const VERSION_PICKER_ENABLED = false
+
 export default function App() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -35,6 +41,7 @@ export default function App() {
     }
   })
   const [version, setVersion] = useState<Version | null>(() => {
+    if (!VERSION_PICKER_ENABLED) return 'b' // Instrument only; a stale 'a' in storage is ignored
     try {
       const v = localStorage.getItem(VER_KEY)
       return v === 'a' || v === 'b' ? v : null
@@ -102,7 +109,7 @@ export default function App() {
   // Boot sequence right after sign-in (both skins)
   if (authed && booting) return <BootSequence onDone={() => setBooting(false)} />
 
-  const toggle = authed ? <VersionToggle version={version} onClick={switchVersion} onChooser={toChooser} /> : null
+  const toggle = authed && VERSION_PICKER_ENABLED ? <VersionToggle version={version} onClick={switchVersion} onChooser={toChooser} /> : null
 
   // ── Version A — facelift ──
   if (version === 'a') {
